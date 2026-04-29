@@ -1,6 +1,6 @@
 # Server Command Design
 
-**Command**: `x402-tools server`
+**Command**: `x402-cli serve`
 
 **Purpose**: Start a local x402 payment server that advertises payment requirements and settles payments via signature verification.
 
@@ -41,7 +41,7 @@ Endpoints:
 | `--pay-to` | yes | — | Recipient wallet address |
 | `--network` | yes | — | Network ID (e.g., `tron:nile`, `eip155:97`) |
 | `--token` | no | `USDT` | Token symbol from registry |
-| `--decimal` \| `--amount` | yes (one) | — | Human-readable or smallest-unit amount |
+| `--rawAmount` \| `--amount` | yes (one) | — | Human-readable or smallest-unit amount |
 | `--scheme` | no | auto-selected | Payment scheme (exact, exact_permit, exact_gasfree) |
 | `--asset` | no | from registry | Explicit token address (out of registry) |
 | `--decimals` | no | — | Token decimals (required with `--asset`) |
@@ -69,7 +69,7 @@ Endpoints:
     "pid": null,
     "pay_url": "http://127.0.0.1:4020/pay",
     "token": "USDT",
-    "decimal": "0.0001",
+    "rawAmount": "0.0001",
     "amount": "100000000000000",
     "pay_to": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
   }
@@ -187,7 +187,7 @@ Based on scheme + network:
 |----------|-------------|-----------|---------|
 | Invalid pay-to | 400 | VALIDATION_ERROR | "--pay-to is required" |
 | Token not found | 400 | VALIDATION_ERROR | "Token '...' not found in registry" |
-| Invalid amount | 400 | VALIDATION_ERROR | "--decimal and --amount are mutually exclusive" |
+| Invalid amount | 400 | VALIDATION_ERROR | "--rawAmount and --amount are mutually exclusive" |
 | Invalid scheme | 400 | VALIDATION_ERROR | "Unknown scheme '...'" |
 | Mechanism registration | 500 | IO_ERROR | "Scheme '...' not supported for network ..." |
 | Settlement failure | 500 | SETTLEMENT_ERROR | "Settlement failed: ..." |
@@ -196,9 +196,9 @@ Based on scheme + network:
 
 ```bash
 # Start server on TRON Nile with 1.25 USDT, exact_gasfree
-x402-tools server \
+x402-cli serve \
   --pay-to TJWdoJk8KyrfxZ2iDUqz7fwpXaMkNqPehx \
-  --decimal 1.25 \
+  --rawAmount 1.25 \
   --network tron:nile \
   --token USDT \
   --scheme exact_gasfree \
@@ -208,5 +208,5 @@ x402-tools server \
 ✓ server (tron:nile) — exact_gasfree
   pay_url: http://127.0.0.1:4020/pay
   token: USDT
-  decimal: 1.25
+  rawAmount: 1.25
 ```

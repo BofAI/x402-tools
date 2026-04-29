@@ -1,11 +1,11 @@
 #!/bin/bash
-# x402-tools smoke test suite
+# x402-cli smoke test suite
 # Validates core server functionality without real blockchain interaction
 
 set -e
 
 echo "=========================================="
-echo "x402-tools Smoke Test Suite"
+echo "x402-cli Smoke Test Suite"
 echo "=========================================="
 echo ""
 
@@ -51,9 +51,9 @@ run_test() {
 
 # Start server in background
 echo "[Setup] Starting server..."
-python3 -m bankofai.x402_tools.cli server \
+python3 -m bankofai.x402_tools.cli serve \
   --pay-to "$TEST_PAY_TO" \
-  --decimal "$TEST_AMOUNT" \
+  --rawAmount "$TEST_AMOUNT" \
   --network "$TEST_NETWORK" \
   --token "$TEST_TOKEN" \
   --scheme exact_permit \

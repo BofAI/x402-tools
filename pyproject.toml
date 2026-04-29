@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "bankofai-x402-tools"
-version = "0.1.0-beta.3"
-description = "x402-tools — one-shot BankofAI x402 CLI: serve a 402 payment endpoint, or pay one as a client."
+name = "bankofai-x402-cli"
+version = "0.1.0-beta.4"
+description = "x402-cli — one-shot BankofAI x402 CLI: serve a 402 payment endpoint, or pay one as a client."
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "BankofAI", email = "contact@bankofai.io" }]
@@ -34,12 +34,12 @@ dev = [
 ]
 
 [project.scripts]
-x402-tools = "bankofai.x402_tools.cli:main"
+x402-cli = "bankofai.x402_tools.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/BofAI/x402-tools#readme"
-Repository = "https://github.com/BofAI/x402-tools.git"
-Issues = "https://github.com/BofAI/x402-tools/issues"
+Homepage = "https://github.com/BofAI/x402-cli#readme"
+Repository = "https://github.com/BofAI/x402-cli.git"
+Issues = "https://github.com/BofAI/x402-cli/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/bankofai"]

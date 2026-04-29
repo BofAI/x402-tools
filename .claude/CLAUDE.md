@@ -1,12 +1,13 @@
-# x402-tools
+# x402-cli
 
 This is a one-shot CLI for the x402 payment protocol, built on the [`bankofai-x402`](https://pypi.org/project/bankofai-x402/) SDK.
 
 ## What this is
 
-x402-tools provides two commands:
-- **`server`** — Start a local x402 payment server (advertise terms, accept signatures, settle)
-- **`client`** — Pay an x402-protected URL when it returns 402 Payment Required
+x402-cli provides three commands:
+- **`serve`** — Start a long-running x402 payment server (advertise terms, accept signatures, settle)
+- **`pay <url>`** — Pay an x402-protected URL when it returns 402 Payment Required
+- **`roundtrip [serve-args]`** — One-shot test: start daemon server, pay it, shut down
 
 The CLI directly uses the SDK's `X402Server` and `FacilitatorClient` — no reimplementation of payment logic.
 
@@ -40,8 +41,10 @@ The CLI directly uses the SDK's `X402Server` and `FacilitatorClient` — no reim
 
 ## Conventions
 
-- **CLI design**: Click-based, single binary (`x402-tools`)
-- **Amounts**: Both forms supported (`--decimal` human-readable, `--amount` smallest-unit)
+- **CLI design**: Click-based, single binary (`x402-cli`)
+- **Commands**: `serve` (foreground/daemon), `pay` (client), `roundtrip` (test utility)
+- **Server modes**: Foreground (default, Ctrl+C to stop) or daemon (--daemon flag)
+- **Amounts**: Both forms supported (`--rawAmount` human-readable, `--amount` smallest-unit)
 - **Wallets**: agent-wallet (preferred) with env-var fallback (TRON_PRIVATE_KEY / EVM_PRIVATE_KEY)
 - **Output**: JSON envelope by default, human-readable with flag
 - **Error codes**: Standardized per command (IO_ERROR, VALIDATION_ERROR, etc.)
@@ -51,7 +54,7 @@ The CLI directly uses the SDK's `X402Server` and `FacilitatorClient` — no reim
 
 ```bash
 pip install -e .
-x402-tools --help
+x402-cli --help
 
 # Run smoke tests
 bash .claude/smoke-test.sh

@@ -20,7 +20,7 @@ PAYMENT_RESPONSE_HEADER = "PAYMENT-RESPONSE"
 
 async def cmd_client(
     url: str,
-    max_decimal: str | None,
+    max_raw_amount: str | None,
     max_amount: str | None,
     network: str | None,
     token: str | None,
@@ -38,8 +38,8 @@ async def cmd_client(
         if not url:
             raise ValueError("URL is required")
 
-        if max_decimal and max_amount:
-            raise ValueError("--max-decimal and --max-amount are mutually exclusive")
+        if max_raw_amount and max_amount:
+            raise ValueError("--max-rawAmount and --max-amount are mutually exclusive")
 
         # Parse custom headers into a dict
         custom_headers = {}

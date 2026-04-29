@@ -1,6 +1,6 @@
 # Client Command Design
 
-**Command**: `x402-tools client <url>`
+**Command**: `x402-cli pay <url>`
 
 **Purpose**: Pay an x402-protected URL by probing for 402, parsing requirements, signing, and retrying.
 
@@ -50,7 +50,7 @@ Output result
 
 | Flag | Default | Purpose |
 |------|---------|---------|
-| `--max-decimal` | — | Max human-readable amount allowed |
+| `--max-rawAmount` | — | Max human-readable amount allowed |
 | `--max-amount` | — | Max smallest-unit amount allowed |
 | `--network` | — | Filter by network (if multiple available) |
 | `--token` | — | Filter by token symbol |
@@ -239,7 +239,7 @@ if args.max_amount:
         )
 ```
 
-### --max-decimal
+### --max-rawAmount
 
 Currently unimplemented (requires token decimals from external source).
 
@@ -247,12 +247,12 @@ Currently unimplemented (requires token decimals from external source).
 
 ```bash
 # Dry-run: probe for 402 and parse requirements
-x402-tools client http://example.com/pay \
+x402-cli pay http://example.com/pay \
   --dry-run \
   --network eip155:97
 
 # Pay with max-amount constraint
-x402-tools client http://example.com/pay \
+x402-cli pay http://example.com/pay \
   --max-amount 200000000000000 \
   --scheme exact_permit \
   --wallet env

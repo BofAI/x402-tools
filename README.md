@@ -26,11 +26,11 @@ x402-tools --help
 
 ```bash
 # Start a server that charges 1.25 USDT on TRON Nile
-x402-tools server --pay-to TJWdoJk8KyrfxZ2iDUqz7fwpXaMkNqPehx \
-  --decimal 1.25 --network tron:nile
+x402-cli serve --pay-to TJWdoJk8KyrfxZ2iDUqz7fwpXaMkNqPehx \
+  --rawAmount 1.25 --network tron:nile
 
 # In another shell — pay it
-x402-tools client http://127.0.0.1:4020/pay \
+x402-cli pay http://127.0.0.1:4020/pay \
   --max-decimal 1.25 --network tron:nile --token USDT
 ```
 

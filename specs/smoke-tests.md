@@ -12,7 +12,7 @@
 
 **Setup**:
 ```bash
-x402-tools server \
+x402-cli serve \
   --pay-to 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 \
   --decimal 0.0001 \
   --network eip155:97 \
@@ -191,7 +191,7 @@ bash .claude/smoke-test.sh
 x402-tools Global Smoke Test
 ==========================================
 
-[1/4] Starting x402-tools server...
+[1/4] Starting x402-cli serve...
 ✓ Server started (PID: 47606)
 
 [2/4] Testing /health endpoint...

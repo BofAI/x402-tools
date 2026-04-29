@@ -32,7 +32,7 @@ async def _return_payment_required(
     scheme: str,
     token_symbol: str,
     amount_str: str,
-    decimal_str: str,
+    raw_amount_str: str,
     pay_to: str,
 ) -> JSONResponse:
     """Return 402 payment required response."""
@@ -40,7 +40,7 @@ async def _return_payment_required(
         config = ResourceConfig(
             scheme=scheme,
             network=network,
-            price=f"{decimal_str} {token_symbol}",
+            price=f"{raw_amount_str} {token_symbol}",
             pay_to=pay_to,
             valid_for=3600,
             delivery_mode="PAYMENT_ONLY",
@@ -71,7 +71,7 @@ async def _return_payment_required(
 
 async def cmd_server(
     pay_to: str,
-    decimal: str | None,
+    raw_amount: str | None,
     amount: str | None,
     network: str,
     token: str,
@@ -118,22 +118,22 @@ async def cmd_server(
             token_address = token_info.address
 
         # Resolve amount
-        if decimal and amount:
-            raise ValueError("--decimal and --amount are mutually exclusive")
-        if not decimal and not amount:
-            raise ValueError("Either --decimal or --amount must be provided")
+        if raw_amount and amount:
+            raise ValueError("--rawAmount and --amount are mutually exclusive")
+        if not raw_amount and not amount:
+            raise ValueError("Either --rawAmount or --amount must be provided")
 
         # Parse amount
-        if decimal:
-            amount_decimal = Decimal(decimal)
+        if raw_amount:
+            amount_decimal = Decimal(raw_amount)
             amount_smallest = int(amount_decimal * (10 ** token_decimals))
             amount_str = str(amount_smallest)
-            decimal_str = decimal
+            raw_amount_str = raw_amount
         else:
             amount_smallest = int(amount or "0")
             amount_str = amount or "0"
             amount_decimal = Decimal(amount_smallest) / (10 ** token_decimals)
-            decimal_str = str(amount_decimal)
+            raw_amount_str = str(amount_decimal)
 
         # Pick scheme
         if not scheme:
@@ -188,7 +188,7 @@ async def cmd_server(
                 "scheme": scheme,
                 "token": token_symbol,
                 "asset": token_address,
-                "rawAmount": decimal_str,
+                "rawAmount": raw_amount_str,
                 "amount": amount_str,
                 "pay_to": pay_to.strip(),
                 "pay_url": pay_url,
@@ -203,7 +203,7 @@ async def cmd_server(
             if not payment_signature_header:
                 return await _return_payment_required(
                     request, server, network, scheme, token_symbol,
-                    amount_str, decimal_str, pay_to.strip()
+                    amount_str, raw_amount_str, pay_to.strip()
                 )
 
             try:
@@ -220,7 +220,7 @@ async def cmd_server(
                 config = ResourceConfig(
                     scheme=scheme,
                     network=network,
-                    price=f"{decimal_str} {token_symbol}",
+                    price=f"{raw_amount_str} {token_symbol}",
                     pay_to=pay_to.strip(),
                     valid_for=3600,
                     delivery_mode="PAYMENT_ONLY",
@@ -260,7 +260,7 @@ async def cmd_server(
             "network": network,
             "scheme": scheme,
             "token": token_symbol,
-            "decimal": decimal_str,
+            "rawAmount": raw_amount_str,
             "amount": amount_str,
             "pay_to": pay_to.strip(),
         }
