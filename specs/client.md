@@ -58,7 +58,6 @@ Output result
 | `--method` | `GET` | HTTP method for request |
 | `--header` | — | Custom HTTP headers (repeatable: `Key: Value`) |
 | `--body` | — | Request body |
-| `--wallet` | `agent-wallet` | Wallet source (agent-wallet \| env) |
 | `--dry-run` | false | Parse requirements but do not sign or pay |
 | `--json` | false | JSON output |
 
@@ -116,7 +115,7 @@ Determine network from accepts[]
   ↓
 Network prefix?
   ├─ "tron:" → TronClientSigner (from agent-wallet or TRON_PRIVATE_KEY)
-  └─ "eip155:" → EvmClientSigner (from agent-wallet or EVM_PRIVATE_KEY)
+  └─ "eip155:" → EvmClientSigner (resolved by bankofai-agent-wallet)
 ```
 
 ### 5. Select Requirements
@@ -221,7 +220,7 @@ Response Status?
   "command": "client",
   "error": {
     "code": "IO_ERROR",
-    "message": "EVM_PRIVATE_KEY is not set in the environment..."
+    "message": "resolve_wallet could not find a wallet source in config or env"
   }
 }
 ```
@@ -271,12 +270,10 @@ x402-cli pay http://example.com/pay \
 # Pay with smallest-unit cap (e.g. <= 200000000000000 wei = 0.0002 BSC USDT)
 x402-cli pay http://example.com/pay \
   --max-rawAmount 200000000000000 \
-  --scheme exact_permit \
-  --wallet env
+  --scheme exact_permit
 
 # Pay with human-readable cap (e.g. <= 0.0002 USDT)
 x402-cli pay http://example.com/pay \
   --max-amount 0.0002 \
-  --scheme exact_permit \
-  --wallet env
+  --scheme exact_permit
 ```

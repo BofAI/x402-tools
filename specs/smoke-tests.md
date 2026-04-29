@@ -136,30 +136,24 @@ PAYMENT-REQUIRED: [Base64-encoded PaymentRequired]
 
 ### [5] Signer Initialization (EVM)
 
-**Objective**: Verify EVM signer can be created from private key
+**Objective**: Verify EVM signer can be created via agent-wallet
 
-**Setup**:
-```bash
-export EVM_PRIVATE_KEY="0x0123456789abcdef..." (32-byte hex)
-```
+**Setup**: Provision agent-wallet (encrypted store via `agent-wallet start` *or* env var `AGENT_WALLET_PRIVATE_KEY` / `TRON_PRIVATE_KEY`).
 
 **Assertions**:
-- Signer created successfully
-- Address initialized correctly
-- Can sign typed data
+- `EvmClientSigner.create()` returns without error
+- Address resolved via agent-wallet matches the configured key
+- Can sign EIP-712 typed data
 
-**Result**: ✅ PASS (with fallback from agent-wallet)
+**Result**: ✅ PASS
 
 ---
 
 ### [6] Signer Initialization (TRON)
 
-**Objective**: Verify TRON signer can be created from private key
+**Objective**: Verify TRON signer can be created via agent-wallet
 
-**Setup**:
-```bash
-export TRON_PRIVATE_KEY="0x0123456789abcdef..." (32-byte hex)
-```
+**Setup**: Same as [5] — agent-wallet picks the source itself.
 
 **Assertions**:
 - Signer created successfully

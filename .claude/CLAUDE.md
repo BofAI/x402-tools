@@ -45,7 +45,7 @@ The CLI directly uses the SDK's `X402Server` and `FacilitatorClient` — no reim
 - **Commands**: `serve` (foreground/daemon), `pay` (client), `roundtrip` (test utility)
 - **Server modes**: Foreground (default, Ctrl+C to stop) or daemon (--daemon flag)
 - **Amounts**: `rawAmount = amount × 10^decimals`. Two forms accepted (mutually exclusive): `--amount` human-readable (e.g. `1.25`), `--rawAmount` smallest-unit integer (e.g. `1250000`). Pay-side caps: `--max-amount` / `--max-rawAmount` follow the same split.
-- **Wallets**: agent-wallet (preferred) with env-var fallback (TRON_PRIVATE_KEY / EVM_PRIVATE_KEY)
+- **Wallets**: delegated entirely to `bankofai-agent-wallet` (`TronClientSigner.create()` / `EvmClientSigner.create()`). agent-wallet itself resolves order: encrypted store → env (`AGENT_WALLET_PRIVATE_KEY` / `TRON_PRIVATE_KEY` / mnemonic). No `--wallet` flag and no in-tree env fallback.
 - **Output**: JSON envelope by default, human-readable with flag
 - **Error codes**: Standardized per command (IO_ERROR, VALIDATION_ERROR, etc.)
 - **Async**: Full async/await support via asyncio

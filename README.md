@@ -23,6 +23,36 @@ pip install -e .
 x402-cli --help
 ```
 
+## Wallet — agent-wallet
+
+x402-cli signs every payment through [`bankofai-agent-wallet`](https://pypi.org/project/bankofai-agent-wallet/) (installed as a transitive dependency). agent-wallet provides one signing surface that resolves wallets in this priority order:
+
+1. **Encrypted local store** — wallets you've added via `agent-wallet add`, kept under `~/.agent-wallet/` and unlocked with a master password.
+2. **Environment variables** — fallback if no local store is configured. The most common variables (already understood by `agent-wallet`):
+   - `AGENT_WALLET_PRIVATE_KEY` or `TRON_PRIVATE_KEY` — 0x-prefixed private key
+   - `AGENT_WALLET_MNEMONIC` or `TRON_MNEMONIC` — BIP-39 mnemonic
+   - `AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX` (optional, mnemonic only)
+
+A single private key derives both an EVM address and a TRON address — you don't need separate keys per chain.
+
+### One-time setup
+
+Either initialize the encrypted local store:
+
+```bash
+agent-wallet start         # creates master password + a default wallet
+agent-wallet list          # see configured wallets
+agent-wallet use <name>    # set active wallet
+```
+
+…or just export an environment variable in the shell where `x402-cli` runs:
+
+```bash
+export TRON_PRIVATE_KEY=0x<your-hex-private-key>
+```
+
+That's it — `x402-cli serve` and `x402-cli pay` both pick up the wallet automatically. There is no `--wallet` flag.
+
 ## Amount conventions
 
 Two mutually exclusive forms are accepted everywhere a price is taken:
@@ -68,12 +98,16 @@ facilitator = FacilitatorClient(base_url)  # SDK provided
 
 This avoids code duplication and keeps the CLI thin (just argument parsing + output formatting).
 
+### Default scheme
+
+For TRON USDT the default scheme is `exact_gasfree` rather than `exact_permit`: hosted/self-hosted `exact_permit` settlement can verify the user's signature but still fail during the on-chain `permitTransferFrom` broadcast (TRC-2612 nuances). GasFree side-steps that by relaying through a custodial address. Override with `--scheme exact_permit` if you've hardened your `permit` flow.
+
 ## Environment variables
 
 | Var | Purpose |
 |---|---|
-| `TRON_PRIVATE_KEY` | TRON wallet key for `--wallet env` |
-| `EVM_PRIVATE_KEY` | EVM wallet key for `--wallet env` |
+| `AGENT_WALLET_PRIVATE_KEY` / `TRON_PRIVATE_KEY` | Wallet private key, picked up by agent-wallet's env provider |
+| `AGENT_WALLET_MNEMONIC` / `TRON_MNEMONIC` | Alternative: BIP-39 mnemonic (with optional `_ACCOUNT_INDEX`) |
 | `TRON_GRID_API_KEY` | Optional, forwarded to SDK for TronGrid |
 | `FACILITATOR_URL` | Override facilitator endpoint (default `https://facilitator.bankofai.io`) |
 

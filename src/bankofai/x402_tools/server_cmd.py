@@ -81,7 +81,6 @@ async def cmd_server(
     host: str,
     port: int,
     resource_url: str | None,
-    wallet: str,
     daemon: bool,
     output_mode: OutputMode,
 ) -> None:

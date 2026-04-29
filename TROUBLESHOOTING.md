@@ -38,15 +38,23 @@ x402-cli serve --pay-to 0x... --amount 1.0 --network eip155:97 --port 4021
 
 ### Agent wallet unavailable
 
-**Error**: `agent-wallet ... wallet unavailable`
+**Error**: `agent-wallet ... wallet unavailable` / `resolve_wallet could not find a wallet source`
 
-**Solutions**:
-1. Install and configure [agent-wallet](https://github.com/BofAI/agent-wallet)
-2. Use environment variables instead:
+**Solutions** (pick one):
+1. Initialize the encrypted local store:
    ```bash
-   export EVM_PRIVATE_KEY=0x...
-   x402-cli pay http://... --wallet env
+   agent-wallet start
+   agent-wallet use <name>
    ```
+2. Or export an env var that agent-wallet's `EnvWalletProvider` understands:
+   ```bash
+   export TRON_PRIVATE_KEY=0x<your-hex-private-key>
+   # or
+   export AGENT_WALLET_PRIVATE_KEY=0x<your-hex-private-key>
+   # or
+   export AGENT_WALLET_MNEMONIC="<bip39 words>"
+   ```
+   The same private key derives both EVM and TRON addresses.
 
 ### Payment required but URL returns 200
 
@@ -88,30 +96,30 @@ HTTP/1.1 402 Payment Required
 
 ## Wallet Issues
 
-### TRON_PRIVATE_KEY not recognized
+x402-cli signs every payment through `bankofai-agent-wallet`. There is no `--wallet` flag — agent-wallet picks the source itself (encrypted local store first, then env vars).
 
-**Error**: `TRON_PRIVATE_KEY is not set in the environment`
+### No wallet source found
 
-**Solution**: Set the environment variable with 0x-prefixed hex:
-```bash
-export TRON_PRIVATE_KEY=0x0123456789abcdef...
-```
+**Error**: `resolve_wallet could not find a wallet source in config or env`
 
-### EVM_PRIVATE_KEY format invalid
+**Solution**: pick one — either provision the encrypted store with `agent-wallet start` / `agent-wallet add`, or export `TRON_PRIVATE_KEY` (or `AGENT_WALLET_PRIVATE_KEY`) before running x402-cli. The same key is used for both EVM and TRON.
 
-**Error**: `Invalid private key format`
+### Invalid private key format
+
+**Error**: agent-wallet raises a decoding error or signs to the wrong address.
 
 **Solutions**:
-1. Use 32-byte hex (64 characters + 0x prefix)
-2. Verify no spaces or quotes:
+1. Use 32-byte hex (64 characters + `0x` prefix).
+2. Ensure no spaces or stray quotes:
    ```bash
    # Good
-   export EVM_PRIVATE_KEY=0xabcd...
-   
+   export TRON_PRIVATE_KEY=0xabcd...
+
    # Bad
-   export EVM_PRIVATE_KEY="0xabcd..."  # Has quotes
-   export EVM_PRIVATE_KEY=0xabcd...ef  # Missing 0x
+   export TRON_PRIVATE_KEY="0xabcd..."   # quotes are part of the value in some shells
+   export TRON_PRIVATE_KEY=abcd...        # missing 0x
    ```
+3. Verify the derived address (`agent-wallet inspect <name>`) is the one you expect.
 
 ## Amount Issues
 

@@ -31,7 +31,6 @@ async def cmd_client(
     method: str,
     headers: tuple[str, ...],
     body: str | None,
-    wallet: str,
     dry_run: bool,
     output_mode: OutputMode,
 ) -> None:
@@ -94,9 +93,9 @@ async def cmd_client(
             networks_in_options = set(opt.network for opt in payment_required.accepts)
             primary_network = next(iter(networks_in_options))
             if primary_network.startswith("tron:"):
-                signer = await resolve_tron_signer(wallet)
+                signer = await resolve_tron_signer()
             elif primary_network.startswith("eip155:"):
-                signer = await resolve_evm_signer(wallet)
+                signer = await resolve_evm_signer()
             else:
                 raise ValueError(f"Unknown network: {primary_network}")
 
@@ -104,9 +103,28 @@ async def cmd_client(
             client_obj = X402Client()
             _register_client_mechanisms(client_obj, payment_required.accepts, signer)
 
+            # SDK's select_payment_requirements only knows scheme+network, so
+            # --token (symbol) is filtered here before delegating.
+            candidates = list(payment_required.accepts)
+            if token:
+                from bankofai.x402.tokens import TokenRegistry
+
+                wanted = token.upper()
+                filtered = []
+                for req in candidates:
+                    info = TokenRegistry.find_by_address(req.network, req.asset)
+                    if info and info.symbol.upper() == wanted:
+                        filtered.append(req)
+                if not filtered:
+                    raise ValueError(
+                        f"No payment options match --token {token} "
+                        f"among {len(candidates)} offered"
+                    )
+                candidates = filtered
+
             # Select payment requirements based on filters
             selected = await client_obj.select_payment_requirements(
-                payment_required.accepts,
+                candidates,
                 filters={
                     "network": network,
                     "scheme": scheme,

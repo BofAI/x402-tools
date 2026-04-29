@@ -48,7 +48,6 @@ Endpoints:
 | `--host` | no | `127.0.0.1` | Bind host |
 | `--port` | no | `4020` | Bind port |
 | `--resource-url` | no | `/pay` | Resource URL in config |
-| `--wallet` | no | `agent-wallet` | Wallet source (agent-wallet \| env) |
 | `--daemon` | no | false | Run in background (not implemented) |
 | `--json` | no | false | JSON output |
 

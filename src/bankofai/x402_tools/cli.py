@@ -91,12 +91,6 @@ def cli() -> None:
     help="Resource URL advertised in x402 requirements",
 )
 @click.option(
-    "--wallet",
-    type=click.Choice(["agent-wallet", "env"]),
-    default="agent-wallet",
-    help="Wallet source: agent-wallet | env (default: agent-wallet)",
-)
-@click.option(
     "--daemon",
     is_flag=True,
     help="Run server in background and print pid",
@@ -119,7 +113,6 @@ def serve(
     host: str,
     port: int,
     resource_url: str | None,
-    wallet: str,
     daemon: bool,
     output_json: bool,
 ) -> None:
@@ -139,7 +132,6 @@ def serve(
             host=host,
             port=port,
             resource_url=resource_url,
-            wallet=wallet,
             daemon=daemon,
             output_mode=output_mode,
         )
@@ -190,12 +182,6 @@ def serve(
     help="Request body string or JSON",
 )
 @click.option(
-    "--wallet",
-    type=click.Choice(["agent-wallet", "env"]),
-    default="agent-wallet",
-    help="Wallet source: agent-wallet | env (default: agent-wallet)",
-)
-@click.option(
     "--dry-run",
     is_flag=True,
     help="Read payment requirements but do not sign or pay",
@@ -216,7 +202,6 @@ def pay(
     method: str,
     header: tuple[str, ...],
     body: str | None,
-    wallet: str,
     dry_run: bool,
     output_json: bool,
 ) -> None:
@@ -234,7 +219,6 @@ def pay(
             method=method,
             headers=header,
             body=body,
-            wallet=wallet,
             dry_run=dry_run,
             output_mode=output_mode,
         )
@@ -300,12 +284,6 @@ def pay(
     help="Resource URL advertised in x402 requirements",
 )
 @click.option(
-    "--wallet",
-    type=click.Choice(["agent-wallet", "env"]),
-    default="agent-wallet",
-    help="Wallet source: agent-wallet | env (default: agent-wallet)",
-)
-@click.option(
     "--json",
     "output_json",
     is_flag=True,
@@ -323,7 +301,6 @@ def roundtrip(
     host: str,
     port: int,
     resource_url: str | None,
-    wallet: str,
     output_json: bool,
 ) -> None:
     """One-shot roundtrip: start server, pay it, shut down (for testing)."""
@@ -344,7 +321,6 @@ def roundtrip(
                 "--token", token,
                 "--host", host,
                 "--port", str(port),
-                "--wallet", wallet,
             ] + (
                 ["--rawAmount", rawamount] if rawamount else []
             ) + (
@@ -377,7 +353,6 @@ def roundtrip(
                 method="GET",
                 headers=(),
                 body=None,
-                wallet=wallet,
                 dry_run=False,
                 output_mode=output_mode,
             )

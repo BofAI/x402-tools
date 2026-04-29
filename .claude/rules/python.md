@@ -41,14 +41,21 @@ amount = Decimal(int(raw)) / (10 ** token_decimals)
 
 ## Wallet Resolution
 
-Priority order:
-1. `--wallet agent-wallet` (default) → `EvmClientSigner.create()` / `TronClientSigner.create()`
-2. `--wallet env` (fallback) → read `EVM_PRIVATE_KEY` / `TRON_PRIVATE_KEY` from environment
+All signing goes through `bankofai-agent-wallet`. The CLI calls `TronClientSigner.create()` / `EvmClientSigner.create()` and lets agent-wallet pick the source. There is **no** `--wallet` flag and **no** in-tree env-fallback / `LocalTronWallet` / `LocalEvmWallet` — that path was removed in beta.10.
 
-For env fallback:
+agent-wallet itself resolves in this order:
+1. Encrypted local store at `~/.agent-wallet/` (managed by `agent-wallet add` / `agent-wallet use`).
+2. Env vars: `AGENT_WALLET_PRIVATE_KEY` or `TRON_PRIVATE_KEY` (private key); `AGENT_WALLET_MNEMONIC` or `TRON_MNEMONIC` (mnemonic).
+
 ```python
-from eth_account import Account  # EVM
-from tronpy.hdwallet import key_to_address  # TRON
+# In wallet.py — entire surface
+from bankofai.x402.signers.client import EvmClientSigner, TronClientSigner
+
+async def resolve_tron_signer() -> TronClientSigner:
+    return await TronClientSigner.create()
+
+async def resolve_evm_signer() -> EvmClientSigner:
+    return await EvmClientSigner.create()
 ```
 
 ## Output

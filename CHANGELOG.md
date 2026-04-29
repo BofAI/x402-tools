@@ -4,6 +4,33 @@ All notable changes to `bankofai-x402-cli` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.10] — 2026-04-29
+
+### Fixed
+
+- **`pay --token <symbol>` was a dead flag**. The CLI parsed it and threaded it through to `cmd_client`, but the filter dict passed to `select_payment_requirements` only contained `network` and `scheme`, so `--token foo` was silently ignored. The SDK's selector also doesn't take a `token` filter, so the CLI now filters candidates itself by symbol (case-insensitive) via `TokenRegistry.find_by_address` *before* delegating to the SDK. `--token foo` now errors out with `No payment options match --token foo among N offered`.
+
+### Changed (breaking)
+
+- **Removed `--wallet` flag**. All signing now goes through `bankofai-agent-wallet` unconditionally. agent-wallet itself picks between its encrypted local store (`~/.agent-wallet/`) and env vars (`AGENT_WALLET_PRIVATE_KEY` / `TRON_PRIVATE_KEY` / `AGENT_WALLET_MNEMONIC` / `TRON_MNEMONIC`), so no in-tree fallback is needed.
+- Removed `LocalTronWallet` / `LocalEvmWallet` / `read_private_key` from `wallet.py`. The module is now ~10 lines that just call `TronClientSigner.create()` / `EvmClientSigner.create()`.
+
+### Added
+
+- **README "Wallet — agent-wallet" section** explaining the two setup paths (`agent-wallet start` for the encrypted store, or one env var for ad-hoc use).
+- `bankofai-agent-wallet>=2.4` declared as a direct dependency (was previously only transitive via `bankofai-x402`).
+
+### Removed
+
+- Direct deps `eth-account` and `eth-keys` (still pulled in transitively by the SDK; the CLI itself no longer imports them).
+
+### Migration
+
+| beta.9 invocation | beta.10 equivalent |
+|---|---|
+| `x402-cli serve --wallet env ...` | `x402-cli serve ...` (set `TRON_PRIVATE_KEY` first, or run `agent-wallet start`) |
+| `x402-cli pay --wallet agent-wallet ...` | `x402-cli pay ...` |
+
 ## [0.1.0-beta.9] — 2026-04-29
 
 ### Changed (breaking)
