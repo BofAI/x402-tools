@@ -50,6 +50,7 @@ Both commands accept either form, never both:
   pay_url: http://127.0.0.1:4020/pay
   token: USDT
   decimal: 1.25
+  amount: 1250000
 ```
 
 ### JSON (`--json`)
@@ -62,9 +63,11 @@ Both commands accept either form, never both:
   "scheme": "exact_gasfree",
   "result": {
     "pay_url": "http://127.0.0.1:4020/pay",
+    "resource_url": "http://127.0.0.1:4020/pay",
     "token": "USDT",
     "decimal": "1.25",
-    "amount": "1250000"
+    "amount": "1250000",
+    "pay_to": "TJWdoJk8KyrfxZ2iDUqz7fwpXaMkNqPehx"
   }
 }
 ```
