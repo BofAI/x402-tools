@@ -1,7 +1,6 @@
 """Client command implementation."""
 
 import logging
-from decimal import Decimal
 from typing import Any
 
 import httpx
@@ -107,10 +106,18 @@ async def cmd_client(
                 payment_required.accepts,
                 filters={
                     "network": network,
-                    "token": token,
                     "scheme": scheme,
-                } if any([network, token, scheme]) else None,
+                } if any([network, scheme]) else None,
             )
+
+            # Validate amount constraints
+            if max_amount:
+                max_val = int(max_amount)
+                actual = int(selected.amount or "0")
+                if actual > max_val:
+                    raise ValueError(
+                        f"Payment amount {actual} exceeds --max-amount {max_amount}"
+                    )
 
             # Create payment payload
             payload = await client_obj.create_payment_payload(
