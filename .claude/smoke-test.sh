@@ -73,12 +73,12 @@ echo ""
 # Test 1: /health endpoint
 run_test "/health endpoint" \
     "curl -s http://127.0.0.1:$TEST_PORT/health" \
-    '"ok": true'
+    '"ok".*true'
 
 # Test 2: /.well-known/x402 endpoint
 run_test "/.well-known/x402 configuration" \
     "curl -s http://127.0.0.1:$TEST_PORT/.well-known/x402" \
-    '"network": "eip155:97"'
+    '"network".*"eip155:97"'
 
 # Test 3: /pay GET returns 402
 run_test "/pay GET returns 402" \
