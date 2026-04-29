@@ -87,19 +87,9 @@ async def cmd_client(
             if not payment_required.accepts:
                 raise ValueError("No payment options available")
 
-            # Select payment requirements based on filters
-            # First, determine network(s) to know which signer to create
-            networks_in_options = set(opt.network for opt in payment_required.accepts)
-            if len(networks_in_options) > 1:
-                if not network:
-                    raise ValueError(
-                        f"Multiple networks available ({networks_in_options}), "
-                        "please specify --network"
-                    )
-                if network not in networks_in_options:
-                    raise ValueError(f"Network {network} not available in payment options")
-
             # Determine the appropriate signer based on available networks
+            # We need to create the right signer type before creating mechanisms
+            networks_in_options = set(opt.network for opt in payment_required.accepts)
             primary_network = next(iter(networks_in_options))
             if primary_network.startswith("tron:"):
                 signer = await resolve_tron_signer(wallet)
