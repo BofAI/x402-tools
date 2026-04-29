@@ -87,9 +87,30 @@ async def cmd_client(
             if not payment_required.accepts:
                 raise ValueError("No payment options available")
 
-            # Register client mechanisms based on network
+            # Select payment requirements based on filters
+            # First, determine network(s) to know which signer to create
+            networks_in_options = set(opt.network for opt in payment_required.accepts)
+            if len(networks_in_options) > 1:
+                if not network:
+                    raise ValueError(
+                        f"Multiple networks available ({networks_in_options}), "
+                        "please specify --network"
+                    )
+                if network not in networks_in_options:
+                    raise ValueError(f"Network {network} not available in payment options")
+
+            # Determine the appropriate signer based on available networks
+            primary_network = next(iter(networks_in_options))
+            if primary_network.startswith("tron:"):
+                signer = await resolve_tron_signer(wallet)
+            elif primary_network.startswith("eip155:"):
+                signer = await resolve_evm_signer(wallet)
+            else:
+                raise ValueError(f"Unknown network: {primary_network}")
+
+            # Now create client and register mechanisms with signer
             client_obj = X402Client()
-            _register_client_mechanisms(client_obj, payment_required.accepts)
+            _register_client_mechanisms(client_obj, payment_required.accepts, signer)
 
             # Select payment requirements based on filters
             selected = await client_obj.select_payment_requirements(
@@ -100,21 +121,6 @@ async def cmd_client(
                     "scheme": scheme,
                 } if any([network, token, scheme]) else None,
             )
-
-            # Determine the appropriate signer
-            network_id = selected.network
-            if network_id.startswith("tron:"):
-                signer = await resolve_tron_signer(wallet)
-            elif network_id.startswith("eip155:"):
-                signer = await resolve_evm_signer(wallet)
-            else:
-                raise ValueError(f"Unknown network: {network_id}")
-
-            # Register the signer with the client
-            scheme_selected = selected.scheme
-            mechanism = client_obj.resolve_mechanism(scheme_selected, network_id)
-            if not mechanism:
-                raise ValueError(f"No mechanism for {scheme_selected} on {network_id}")
 
             # Create payment payload
             payload = await client_obj.create_payment_payload(
@@ -209,6 +215,7 @@ async def cmd_client(
 def _register_client_mechanisms(
     client: X402Client,
     requires: list[Any],
+    signer: Any,
 ) -> None:
     """Register payment mechanisms based on required payment options."""
     networks_schemes = {}
@@ -225,18 +232,18 @@ def _register_client_mechanisms(
                 if scheme == "exact":
                     if network.startswith("eip155:"):
                         from bankofai.x402.mechanisms.evm.exact import ExactEvmClientMechanism
-                        client.register(network, ExactEvmClientMechanism())
+                        client.register(network, ExactEvmClientMechanism(signer))
                 elif scheme == "exact_permit":
                     if network.startswith("eip155:"):
                         from bankofai.x402.mechanisms.evm.exact_permit import ExactPermitEvmClientMechanism
-                        client.register(network, ExactPermitEvmClientMechanism())
+                        client.register(network, ExactPermitEvmClientMechanism(signer))
                     elif network.startswith("tron:"):
                         from bankofai.x402.mechanisms.tron.exact_permit import ExactPermitTronClientMechanism
-                        client.register(network, ExactPermitTronClientMechanism())
+                        client.register(network, ExactPermitTronClientMechanism(signer))
                 elif scheme == "exact_gasfree":
                     if network.startswith("tron:"):
                         from bankofai.x402.mechanisms.tron.exact_gasfree.client import ExactGasFreeClientMechanism
-                        client.register(network, ExactGasFreeClientMechanism())
+                        client.register(network, ExactGasFreeClientMechanism(signer))
             except Exception as err:
                 logger.warning(f"Failed to register {scheme} mechanism for {network}: {err}")
 
