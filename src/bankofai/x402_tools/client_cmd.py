@@ -114,12 +114,23 @@ async def cmd_client(
             )
 
             # Validate amount constraints
-            if max_amount:
-                max_val = int(max_amount)
-                actual = int(selected.amount or "0")
-                if actual > max_val:
+            # selected.amount is in smallest unit (raw integer string).
+            actual_raw = int(selected.amount or "0")
+            if max_raw_amount:
+                if actual_raw > int(max_raw_amount):
                     raise ValueError(
-                        f"Payment amount {actual} exceeds --max-amount {max_amount}"
+                        f"Payment rawAmount {actual_raw} exceeds --max-rawAmount {max_raw_amount}"
+                    )
+            if max_amount:
+                from decimal import Decimal
+                from bankofai.x402.tokens import TokenRegistry
+
+                token_info = TokenRegistry.find_by_address(selected.network, selected.asset)
+                decimals = token_info.decimals if token_info else 6
+                actual_human = Decimal(actual_raw) / (10 ** decimals)
+                if actual_human > Decimal(max_amount):
+                    raise ValueError(
+                        f"Payment amount {actual_human} exceeds --max-amount {max_amount}"
                     )
 
             # Extract extensions (e.g. paymentPermitContext) from 402 response

@@ -9,7 +9,7 @@ Start a local x402 payment server.
 ```bash
 x402-cli serve \
   --pay-to TJWdoJk8KyrfxZ2iDUqz7fwpXaMkNqPehx \
-  --rawAmount 1.25 \
+  --amount 1.25 \
   --network tron:nile \
   --token USDT \
   --scheme exact_gasfree \
@@ -27,19 +27,42 @@ Pay an x402-protected URL.
 
 ```bash
 x402-cli pay http://127.0.0.1:4020/pay \
-  --max-rawAmount 1.25 \
+  --max-amount 1.25 \
+  --network tron:nile \
+  --token USDT
+```
+
+### `x402-cli roundtrip`
+
+Spin up `serve` in the background, run `pay` against it, then shut down. Useful for one-shot validation.
+
+```bash
+x402-cli roundtrip \
+  --pay-to TJWdoJk8KyrfxZ2iDUqz7fwpXaMkNqPehx \
+  --amount 1.25 \
   --network tron:nile \
   --token USDT
 ```
 
 ## Amount conventions
 
-Both commands accept either form, never both:
+Two mutually exclusive forms. The relationship:
 
-| Flag | Meaning | Example |
+```
+rawAmount = amount × 10^decimals
+```
+
+| Flag | Meaning | Example (USDT, 6 decimals) |
 |---|---|---|
-| `--rawAmount <decimal>` | Human-readable | `1.25` |
-| `--amount <integer>` | Smallest-unit | `1250000` for 1.25 USDT |
+| `--amount <decimal>` | Human-readable | `1.25` |
+| `--rawAmount <integer>` | Smallest-unit | `1250000` |
+
+The pay-side caps follow the same convention:
+
+| Flag | Meaning |
+|---|---|
+| `--max-amount <decimal>` | Human-readable cap, e.g. `1.25` |
+| `--max-rawAmount <integer>` | Smallest-unit cap, e.g. `1250000` |
 
 ## Output
 
@@ -49,8 +72,8 @@ Both commands accept either form, never both:
 ✓ server (tron:nile) — exact_gasfree
   pay_url: http://127.0.0.1:4020/pay
   token: USDT
-  rawAmount: 1.25
-  amount: 1250000
+  amount: 1.25
+  rawAmount: 1250000
 ```
 
 ### JSON (`--json`)
@@ -65,8 +88,8 @@ Both commands accept either form, never both:
     "pay_url": "http://127.0.0.1:4020/pay",
     "resource_url": "http://127.0.0.1:4020/pay",
     "token": "USDT",
-    "rawAmount": "1.25",
-    "amount": "1250000",
+    "amount": "1.25",
+    "rawAmount": "1250000",
     "pay_to": "TJWdoJk8KyrfxZ2iDUqz7fwpXaMkNqPehx"
   }
 }

@@ -40,14 +40,14 @@ def cli() -> None:
     help="Recipient wallet address",
 )
 @click.option(
-    "--rawAmount",
-    type=str,
-    help="Human-readable amount, e.g. 1.25",
-)
-@click.option(
     "--amount",
     type=str,
-    help="Smallest-unit amount, e.g. 1250000 for 1.25 USDT",
+    help="Human-readable amount, e.g. 1.25 (mutually exclusive with --rawAmount)",
+)
+@click.option(
+    "--rawAmount",
+    type=str,
+    help="Smallest-unit amount, e.g. 1250000 for 1.25 USDT (mutually exclusive with --amount)",
 )
 @click.option(
     "--network",
@@ -150,14 +150,14 @@ def serve(
 @cli.command()
 @click.argument("url")
 @click.option(
-    "--max-rawAmount",
-    type=str,
-    help="Maximum human-readable amount allowed",
-)
-@click.option(
     "--max-amount",
     type=str,
-    help="Maximum smallest-unit amount allowed",
+    help="Maximum human-readable amount allowed, e.g. 1.25",
+)
+@click.option(
+    "--max-rawAmount",
+    type=str,
+    help="Maximum smallest-unit amount allowed, e.g. 1250000",
 )
 @click.option(
     "--network",
@@ -249,14 +249,14 @@ def pay(
     help="Recipient wallet address",
 )
 @click.option(
-    "--rawAmount",
-    type=str,
-    help="Human-readable amount, e.g. 1.25",
-)
-@click.option(
     "--amount",
     type=str,
-    help="Smallest-unit amount, e.g. 1250000 for 1.25 USDT",
+    help="Human-readable amount, e.g. 1.25 (mutually exclusive with --rawAmount)",
+)
+@click.option(
+    "--rawAmount",
+    type=str,
+    help="Smallest-unit amount, e.g. 1250000 for 1.25 USDT (mutually exclusive with --amount)",
 )
 @click.option(
     "--network",

@@ -41,7 +41,7 @@ Endpoints:
 | `--pay-to` | yes | — | Recipient wallet address |
 | `--network` | yes | — | Network ID (e.g., `tron:nile`, `eip155:97`) |
 | `--token` | no | `USDT` | Token symbol from registry |
-| `--rawAmount` \| `--amount` | yes (one) | — | Human-readable or smallest-unit amount |
+| `--amount` \| `--rawAmount` | yes (one) | — | `--amount` = human-readable (e.g. `1.25`); `--rawAmount` = smallest unit (e.g. `1250000`). `rawAmount = amount × 10^decimals`. |
 | `--scheme` | no | auto-selected | Payment scheme (exact, exact_permit, exact_gasfree) |
 | `--asset` | no | from registry | Explicit token address (out of registry) |
 | `--decimals` | no | — | Token decimals (required with `--asset`) |
@@ -69,8 +69,8 @@ Endpoints:
     "pid": null,
     "pay_url": "http://127.0.0.1:4020/pay",
     "token": "USDT",
-    "rawAmount": "0.0001",
-    "amount": "100000000000000",
+    "amount": "0.0001",
+    "rawAmount": "100000000000000",
     "pay_to": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
   }
 }
@@ -87,8 +87,8 @@ Endpoints:
   "scheme": "exact_permit",
   "token": "USDT",
   "asset": "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd",
-  "rawAmount": "0.0001",
-  "amount": "100000000000000",
+  "amount": "0.0001",
+  "rawAmount": "100000000000000",
   "pay_to": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
   "pay_url": "http://127.0.0.1:4020/pay",
   "resource_url": "http://127.0.0.1:4020/pay"
@@ -198,7 +198,7 @@ Based on scheme + network:
 # Start server on TRON Nile with 1.25 USDT, exact_gasfree
 x402-cli serve \
   --pay-to TJWdoJk8KyrfxZ2iDUqz7fwpXaMkNqPehx \
-  --rawAmount 1.25 \
+  --amount 1.25 \
   --network tron:nile \
   --token USDT \
   --scheme exact_gasfree \
@@ -208,5 +208,6 @@ x402-cli serve \
 ✓ server (tron:nile) — exact_gasfree
   pay_url: http://127.0.0.1:4020/pay
   token: USDT
-  rawAmount: 1.25
+  amount: 1.25
+  rawAmount: 1250000
 ```

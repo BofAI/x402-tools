@@ -4,6 +4,26 @@ All notable changes to `bankofai-x402-cli` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.9] — 2026-04-29
+
+### Changed (breaking)
+
+- **Swap `--amount` / `--rawAmount` semantics to match the math** `rawAmount = amount × 10^decimals`. Previous betas had this backwards.
+  - `--amount` is now the **human-readable** decimal (e.g. `1.25`).
+  - `--rawAmount` is now the **smallest-unit integer** (e.g. `1250000` for 1.25 USDT).
+  - Same swap for `--max-amount` (human-readable cap) / `--max-rawAmount` (smallest-unit cap).
+  - JSON output fields `amount` and `rawAmount` follow the new convention.
+- `--max-rawAmount` is now actually wired up (was previously documented but unimplemented).
+
+### Migration from beta.8 and earlier
+
+| Old (wrong) | New (correct) |
+|---|---|
+| `--rawAmount 1.25` | `--amount 1.25` |
+| `--amount 1250000` | `--rawAmount 1250000` |
+| `--max-rawAmount 1.25` | `--max-amount 1.25` |
+| `--max-amount 1250000` | `--max-rawAmount 1250000` |
+
 ## [0.1.0-beta.8] — 2026-04-29
 
 ### Fixed

@@ -53,7 +53,7 @@ run_test() {
 echo "[Setup] Starting server..."
 python3 -m bankofai.x402_tools.cli serve \
   --pay-to "$TEST_PAY_TO" \
-  --rawAmount "$TEST_AMOUNT" \
+  --amount "$TEST_AMOUNT" \
   --network "$TEST_NETWORK" \
   --token "$TEST_TOKEN" \
   --scheme exact_permit \

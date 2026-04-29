@@ -75,8 +75,8 @@ GET http://127.0.0.1:9999/.well-known/x402
   "scheme": "exact_permit",
   "token": "USDT",
   "asset": "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd",
-  "rawAmount": "0.0001",
-  "amount": "100000000000000",
+  "amount": "0.0001",
+  "rawAmount": "100000000000000",
   "pay_to": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
   "pay_url": "http://127.0.0.1:9999/pay",
   "resource_url": "http://127.0.0.1:9999/pay"

@@ -20,20 +20,23 @@ Target: **Python 3.11+**. Package: `bankofai-x402-cli` (PyPI).
 
 ## Amount Handling
 
-Both forms are accepted (never both):
+`rawAmount = amount × 10^decimals`. Both forms are accepted (never both):
 
 ```python
-# Human-readable (decimal)
---rawAmount 1.25
+# Human-readable
+--amount 1.25
 
-# Smallest-unit integer
---amount 1250000000000000
+# Smallest-unit integer (1.25 × 10^6 for USDT)
+--rawAmount 1250000
 ```
 
 Conversion uses `Decimal` for precision:
 ```python
 from decimal import Decimal
-amount_smallest = int(Decimal(decimal) * (10 ** token_decimals))
+# human → raw
+raw = int(Decimal(amount) * (10 ** token_decimals))
+# raw → human
+amount = Decimal(int(raw)) / (10 ** token_decimals)
 ```
 
 ## Wallet Resolution

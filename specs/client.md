@@ -50,8 +50,8 @@ Output result
 
 | Flag | Default | Purpose |
 |------|---------|---------|
-| `--max-rawAmount` | — | Max human-readable amount allowed |
-| `--max-amount` | — | Max smallest-unit amount allowed |
+| `--max-amount` | — | Max human-readable amount allowed (e.g. `1.25`) |
+| `--max-rawAmount` | — | Max smallest-unit amount allowed (e.g. `1250000`) |
 | `--network` | — | Filter by network (if multiple available) |
 | `--token` | — | Filter by token symbol |
 | `--scheme` | — | Filter by scheme |
@@ -228,20 +228,37 @@ Response Status?
 
 ## Constraints
 
-### --max-amount Validation
+### --max-rawAmount Validation
+
+`--max-rawAmount` is compared directly against `selected.amount` (which the SDK already returns in smallest units):
 
 ```python
-if args.max_amount:
-    if int(selected.amount) > int(args.max_amount):
+if args.max_raw_amount:
+    if int(selected.amount) > int(args.max_raw_amount):
         raise ValueError(
-            f"Payment amount {selected.amount} exceeds "
-            f"--max-amount {args.max_amount}"
+            f"Payment rawAmount {selected.amount} exceeds "
+            f"--max-rawAmount {args.max_raw_amount}"
         )
 ```
 
-### --max-rawAmount
+### --max-amount Validation
 
-Currently unimplemented (requires token decimals from external source).
+`--max-amount` is human-readable. The check looks up token decimals from the registry, converts the smallest-unit amount to a Decimal, and compares:
+
+```python
+from decimal import Decimal
+from bankofai.x402.tokens import TokenRegistry
+
+if args.max_amount:
+    token = TokenRegistry.find_by_address(selected.network, selected.asset)
+    decimals = token.decimals if token else 6
+    actual_human = Decimal(int(selected.amount)) / (10 ** decimals)
+    if actual_human > Decimal(args.max_amount):
+        raise ValueError(
+            f"Payment amount {actual_human} exceeds "
+            f"--max-amount {args.max_amount}"
+        )
+```
 
 ## Example Usage
 
@@ -251,9 +268,15 @@ x402-cli pay http://example.com/pay \
   --dry-run \
   --network eip155:97
 
-# Pay with max-amount constraint
+# Pay with smallest-unit cap (e.g. <= 200000000000000 wei = 0.0002 BSC USDT)
 x402-cli pay http://example.com/pay \
-  --max-amount 200000000000000 \
+  --max-rawAmount 200000000000000 \
+  --scheme exact_permit \
+  --wallet env
+
+# Pay with human-readable cap (e.g. <= 0.0002 USDT)
+x402-cli pay http://example.com/pay \
+  --max-amount 0.0002 \
   --scheme exact_permit \
   --wallet env
 ```

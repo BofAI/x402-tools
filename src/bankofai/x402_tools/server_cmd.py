@@ -40,7 +40,7 @@ async def _return_payment_required(
         config = ResourceConfig(
             scheme=scheme,
             network=network,
-            price=f"{raw_amount_str} {token_symbol}",
+            price=f"{amount_str} {token_symbol}",
             pay_to=pay_to,
             valid_for=3600,
             delivery_mode="PAYMENT_ONLY",
@@ -118,22 +118,24 @@ async def cmd_server(
             token_address = token_info.address
 
         # Resolve amount
+        # rawAmount = amount × 10^decimals
+        #   --amount     human-readable decimal (e.g. 1.25)
+        #   --rawAmount  smallest-unit integer (e.g. 1250000 for 1.25 USDT)
         if raw_amount and amount:
             raise ValueError("--rawAmount and --amount are mutually exclusive")
         if not raw_amount and not amount:
             raise ValueError("Either --rawAmount or --amount must be provided")
 
-        # Parse amount
-        if raw_amount:
-            amount_decimal = Decimal(raw_amount)
+        if amount:
+            amount_decimal = Decimal(amount)
             amount_smallest = int(amount_decimal * (10 ** token_decimals))
-            amount_str = str(amount_smallest)
-            raw_amount_str = raw_amount
+            amount_str = str(amount)
+            raw_amount_str = str(amount_smallest)
         else:
-            amount_smallest = int(amount or "0")
-            amount_str = amount or "0"
+            amount_smallest = int(raw_amount or "0")
+            raw_amount_str = raw_amount or "0"
             amount_decimal = Decimal(amount_smallest) / (10 ** token_decimals)
-            raw_amount_str = str(amount_decimal)
+            amount_str = str(amount_decimal)
 
         # Pick scheme
         if not scheme:
@@ -222,7 +224,7 @@ async def cmd_server(
                 config = ResourceConfig(
                     scheme=scheme,
                     network=network,
-                    price=f"{raw_amount_str} {token_symbol}",
+                    price=f"{amount_str} {token_symbol}",
                     pay_to=pay_to.strip(),
                     valid_for=3600,
                     delivery_mode="PAYMENT_ONLY",

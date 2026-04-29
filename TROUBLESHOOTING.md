@@ -10,7 +10,7 @@ Common issues and solutions for x402-cli.
 
 **Solution**: Change the port with `--port` flag:
 ```bash
-x402-cli serve --pay-to 0x... --rawAmount 1.0 --network eip155:97 --port 4021
+x402-cli serve --pay-to 0x... --amount 1.0 --network eip155:97 --port 4021
 ```
 
 ### Token not found
@@ -21,7 +21,7 @@ x402-cli serve --pay-to 0x... --rawAmount 1.0 --network eip155:97 --port 4021
 1. Verify the token symbol is correct (case-sensitive)
 2. Use an explicit address with `--asset` and `--decimals`:
    ```bash
-   x402-cli serve --pay-to 0x... --rawAmount 1.0 --network eip155:97 \
+   x402-cli serve --pay-to 0x... --amount 1.0 --network eip155:97 \
      --asset 0x337610d27c682E347C9cD60BD4b3b107C9d34dDd --decimals 6
    ```
 3. Check supported networks in `specs/server.md`
@@ -120,19 +120,19 @@ export TRON_PRIVATE_KEY=0x0123456789abcdef...
 **Error**: `ValueError: amount conversion failed`
 
 **Solutions**:
-1. Use `--rawAmount` for human-readable amounts (e.g., `1.25`)
-2. Or use `--amount` for smallest units (e.g., `1250000000000000`)
+1. Use `--amount` for human-readable amounts (e.g., `1.25`)
+2. Or use `--rawAmount` for smallest units (e.g., `1250000`). The relation is `rawAmount = amount × 10^decimals`.
 3. Don't use both flags simultaneously
 
 Example:
 ```bash
 # Good (for 1.25 USDT with 6 decimals)
-x402-cli serve --rawAmount 1.25
+x402-cli serve --amount 1.25
 # or
-x402-cli serve --amount 1250000
+x402-cli serve --rawAmount 1250000
 
 # Bad (both)
-x402-cli serve --rawAmount 1.25 --amount 1250000
+x402-cli serve --amount 1.25 --rawAmount 1250000
 ```
 
 ### Incorrect decimals
