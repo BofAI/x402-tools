@@ -146,7 +146,9 @@ async def cmd_server(
 
         # Create X402Server and register mechanisms
         server = X402Server()
-        facilitator_url = "https://facilitator.bankofai.io"
+        # Use environment variable or default to main facilitator
+        import os
+        facilitator_url = os.getenv("FACILITATOR_URL", "https://facilitator.bankofai.io")
         facilitator = FacilitatorClient(base_url=facilitator_url)
         server.set_facilitator(facilitator)
 
