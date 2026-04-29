@@ -1,13 +1,16 @@
 """Client command implementation."""
 
 import logging
+import os
 from typing import Any
 
 import httpx
 
 from bankofai.x402.clients import X402Client
+from bankofai.x402.config import NetworkConfig
 from bankofai.x402.encoding import decode_payment_payload, encode_payment_payload
 from bankofai.x402.types import PaymentRequired
+from bankofai.x402.utils.gasfree import GasFreeAPIClient
 from bankofai.x402_tools.output import OutputMode, emit
 from bankofai.x402_tools.wallet import resolve_evm_signer, resolve_tron_signer
 
@@ -49,7 +52,7 @@ async def cmd_client(
             key, value = header.split(":", 1)
             custom_headers[key.strip()] = value.strip()
 
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             # First request: probe for 402
             response = await client.request(
                 method=method,
@@ -119,10 +122,16 @@ async def cmd_client(
                         f"Payment amount {actual} exceeds --max-amount {max_amount}"
                     )
 
+            # Extract extensions (e.g. paymentPermitContext) from 402 response
+            extensions_dict = None
+            if payment_required.extensions:
+                extensions_dict = payment_required.extensions.model_dump(by_alias=True)
+
             # Create payment payload
             payload = await client_obj.create_payment_payload(
                 selected,
                 resource=url,
+                extensions=extensions_dict,
             )
 
             if dry_run:
@@ -202,11 +211,19 @@ async def cmd_client(
             )
 
     except Exception as err:
+        error_msg = str(err) or repr(err)
+        logger.error(f"Client error: {error_msg}", exc_info=True)
         emit(
             command="client",
-            error={"code": "IO_ERROR", "message": str(err)},
+            error={"code": "IO_ERROR", "message": error_msg},
             mode=output_mode,
         )
+
+
+def _get_gasfree_api_base_url(network: str) -> str:
+    """Get GasFree API base URL from env var, falling back to NetworkConfig."""
+    env_suffix = network.split(":")[-1].upper()
+    return os.getenv(f"GASFREE_API_BASE_URL_{env_suffix}") or NetworkConfig.get_gasfree_api_base_url(network)
 
 
 def _register_client_mechanisms(
@@ -222,6 +239,13 @@ def _register_client_mechanisms(
         if network not in networks_schemes:
             networks_schemes[network] = set()
         networks_schemes[network].add(scheme)
+
+    # Pre-build GasFree API clients for any TRON networks that need them
+    gasfree_clients = {}
+    for network in networks_schemes:
+        if network.startswith("tron:") and "exact_gasfree" in networks_schemes[network]:
+            if network not in gasfree_clients:
+                gasfree_clients[network] = GasFreeAPIClient(_get_gasfree_api_base_url(network))
 
     for network, schemes in networks_schemes.items():
         for scheme in schemes:
@@ -240,7 +264,8 @@ def _register_client_mechanisms(
                 elif scheme == "exact_gasfree":
                     if network.startswith("tron:"):
                         from bankofai.x402.mechanisms.tron.exact_gasfree.client import ExactGasFreeClientMechanism
-                        client.register(network, ExactGasFreeClientMechanism(signer))
+                        mechanism = ExactGasFreeClientMechanism(signer, clients=gasfree_clients)
+                        client.register(network, mechanism)
             except Exception as err:
                 logger.warning(f"Failed to register {scheme} mechanism for {network}: {err}")
 
