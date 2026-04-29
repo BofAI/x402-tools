@@ -188,7 +188,7 @@ async def cmd_server(
                 "scheme": scheme,
                 "token": token_symbol,
                 "asset": token_address,
-                "decimal": decimal_str,
+                "rawAmount": decimal_str,
                 "amount": amount_str,
                 "pay_to": pay_to.strip(),
                 "pay_url": pay_url,
