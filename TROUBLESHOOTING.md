@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-Common issues and solutions for x402-tools.
+Common issues and solutions for x402-cli.
 
 ## Server Issues
 
@@ -10,7 +10,7 @@ Common issues and solutions for x402-tools.
 
 **Solution**: Change the port with `--port` flag:
 ```bash
-x402-tools server --pay-to 0x... --rawAmount 1.0 --network eip155:97 --port 4021
+x402-cli serve --pay-to 0x... --rawAmount 1.0 --network eip155:97 --port 4021
 ```
 
 ### Token not found
@@ -19,10 +19,10 @@ x402-tools server --pay-to 0x... --rawAmount 1.0 --network eip155:97 --port 4021
 
 **Solutions**:
 1. Verify the token symbol is correct (case-sensitive)
-2. Use an explicit address with `--asset` and `--rawAmounts`:
+2. Use an explicit address with `--asset` and `--decimals`:
    ```bash
-   x402-tools server --pay-to 0x... --rawAmount 1.0 --network eip155:97 \
-     --asset 0x337610d27c682E347C9cD60BD4b3b107C9d34dDd --rawAmounts 6
+   x402-cli serve --pay-to 0x... --rawAmount 1.0 --network eip155:97 \
+     --asset 0x337610d27c682E347C9cD60BD4b3b107C9d34dDd --decimals 6
    ```
 3. Check supported networks in `specs/server.md`
 
@@ -45,7 +45,7 @@ x402-tools server --pay-to 0x... --rawAmount 1.0 --network eip155:97 --port 4021
 2. Use environment variables instead:
    ```bash
    export EVM_PRIVATE_KEY=0x...
-   x402-tools client http://... --wallet env
+   x402-cli pay http://... --wallet env
    ```
 
 ### Payment required but URL returns 200
@@ -127,12 +127,12 @@ export TRON_PRIVATE_KEY=0x0123456789abcdef...
 Example:
 ```bash
 # Good (for 1.25 USDT with 6 decimals)
-x402-tools server --rawAmount 1.25
+x402-cli serve --rawAmount 1.25
 # or
-x402-tools server --amount 1250000
+x402-cli serve --amount 1250000
 
 # Bad (both)
-x402-tools server --rawAmount 1.25 --amount 1250000
+x402-cli serve --rawAmount 1.25 --amount 1250000
 ```
 
 ### Incorrect decimals
@@ -146,7 +146,7 @@ x402-tools server --rawAmount 1.25 --amount 1250000
    # USDC: 6 decimals
    # DAI: 18 decimals
    ```
-2. When using `--asset`, always specify `--rawAmounts`
+2. When using `--asset`, always specify `--decimals`
 
 ## Network Issues
 
@@ -178,7 +178,7 @@ x402-tools server --rawAmount 1.25 --amount 1250000
 
 **Solution**: Use proper JSON output flag:
 ```bash
-x402-tools server ... --json | jq .
+x402-cli serve ... --json | jq .
 ```
 
 ### Output is empty
@@ -196,20 +196,20 @@ To get detailed logs:
 
 ```bash
 # With logging (Python environment)
-PYTHONVERBOSE=1 x402-tools server ...
+PYTHONVERBOSE=1 x402-cli serve ...
 
 # Or configure logging in code
 python -c "
 import logging
 logging.basicConfig(level=logging.DEBUG)
 import subprocess
-subprocess.run(['x402-tools', 'server', ...])
+subprocess.run(['x402-cli', 'serve', ...])
 "
 ```
 
 ## Still Having Issues?
 
-1. Check [x402-tools README](README.md)
+1. Check [x402-cli README](README.md)
 2. Review [specification docs](specs/README.md)
 3. Run smoke tests: `bash .claude/smoke-test.sh`
 4. Check [FEATURES.md](FEATURES.md) for examples
