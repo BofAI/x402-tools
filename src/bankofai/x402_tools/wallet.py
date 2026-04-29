@@ -3,7 +3,7 @@
 import os
 from typing import Literal
 
-from bankofai.x402.signers import EvmClientSigner, TronClientSigner
+from bankofai.x402.signers.client import EvmClientSigner, TronClientSigner
 
 
 def read_private_key(wallet_network: Literal["tron", "evm"]) -> str:
@@ -24,8 +24,15 @@ def read_private_key(wallet_network: Literal["tron", "evm"]) -> str:
 async def resolve_tron_signer(wallet_source: str = "agent-wallet") -> TronClientSigner:
     """Resolve TRON signer (agent-wallet or env fallback)."""
     if wallet_source == "env":
+        from tronpy.hdwallet import key_to_address
         private_key = read_private_key("tron")
-        return TronClientSigner.from_private_key(private_key)
+        if private_key.startswith("0x"):
+            private_key = private_key[2:]
+        priv_key_bytes = bytes.fromhex(private_key)
+        address = key_to_address(priv_key_bytes)
+        signer = TronClientSigner({"privateKey": private_key, "address": address})
+        signer.set_address(address)
+        return signer
 
     try:
         return await TronClientSigner.create()
@@ -36,15 +43,26 @@ async def resolve_tron_signer(wallet_source: str = "agent-wallet") -> TronClient
             f"[x402-tools] agent-wallet TRON wallet unavailable ({err}); "
             f"falling back to TRON_PRIVATE_KEY.\n"
         )
+        from tronpy.hdwallet import key_to_address
         private_key = read_private_key("tron")
-        return TronClientSigner.from_private_key(private_key)
+        if private_key.startswith("0x"):
+            private_key = private_key[2:]
+        priv_key_bytes = bytes.fromhex(private_key)
+        address = key_to_address(priv_key_bytes)
+        signer = TronClientSigner({"privateKey": private_key, "address": address})
+        signer.set_address(address)
+        return signer
 
 
 async def resolve_evm_signer(wallet_source: str = "agent-wallet") -> EvmClientSigner:
     """Resolve EVM signer (agent-wallet or env fallback)."""
     if wallet_source == "env":
+        from eth_account import Account
         private_key = read_private_key("evm")
-        return EvmClientSigner.from_private_key(private_key)
+        account = Account.from_key(private_key)
+        signer = EvmClientSigner(account)
+        signer.set_address(account.address)
+        return signer
 
     try:
         return await EvmClientSigner.create()
@@ -55,5 +73,9 @@ async def resolve_evm_signer(wallet_source: str = "agent-wallet") -> EvmClientSi
             f"[x402-tools] agent-wallet EVM wallet unavailable ({err}); "
             f"falling back to EVM_PRIVATE_KEY.\n"
         )
+        from eth_account import Account
         private_key = read_private_key("evm")
-        return EvmClientSigner.from_private_key(private_key)
+        account = Account.from_key(private_key)
+        signer = EvmClientSigner(account)
+        signer.set_address(account.address)
+        return signer
