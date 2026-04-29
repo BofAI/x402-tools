@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bankofai-x402-tools"
+version = "0.1.0-beta.3"
+description = "x402-tools — one-shot BankofAI x402 CLI: serve a 402 payment endpoint, or pay one as a client."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "BankofAI", email = "contact@bankofai.io" }]
+keywords = ["x402", "cli", "tron", "evm", "payment", "blockchain"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: MIT License",
+]
+requires-python = ">=3.11"
+
+dependencies = [
+  "bankofai-x402>=0.5.9",
+  "click>=8.1.0",
+  "httpx>=0.24.0",
+  "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0",
+  "pytest-asyncio>=0.21",
+  "mypy>=1.0",
+  "ruff>=0.1.0",
+]
+
+[project.scripts]
+x402-tools = "bankofai.x402_tools.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/BofAI/x402-tools#readme"
+Repository = "https://github.com/BofAI/x402-tools.git"
+Issues = "https://github.com/BofAI/x402-tools/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bankofai"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
