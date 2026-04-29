@@ -1,6 +1,6 @@
 # Smoke Tests Specification
 
-**Purpose**: Validate core x402-tools functionality without real blockchain interaction.
+**Purpose**: Validate core x402-cli functionality without real blockchain interaction.
 
 **Status**: ✅ Implemented and passing (2026-04-29)
 
@@ -175,7 +175,7 @@ export TRON_PRIVATE_KEY="0x0123456789abcdef..." (32-byte hex)
 ### Run All Smoke Tests
 
 ```bash
-cd /path/to/x402-tools
+cd /path/to/x402-cli
 
 # Install package in dev mode
 pip install -e .
@@ -188,7 +188,7 @@ bash .claude/smoke-test.sh
 
 ```
 ==========================================
-x402-tools Global Smoke Test
+x402-cli Global Smoke Test
 ==========================================
 
 [1/4] Starting x402-cli serve...

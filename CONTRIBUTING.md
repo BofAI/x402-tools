@@ -1,6 +1,6 @@
-# Contributing to x402-tools
+# Contributing to x402-cli
 
-Thank you for your interest in contributing! This document provides guidelines and instructions for contributing to x402-tools.
+Thank you for your interest in contributing! This document provides guidelines and instructions for contributing to x402-cli.
 
 ## Code of Conduct
 
@@ -18,8 +18,8 @@ Be respectful, inclusive, and constructive in all interactions.
 
 ```bash
 # Clone the repository
-git clone https://github.com/BofAI/x402-tools.git
-cd x402-tools
+git clone https://github.com/BofAI/x402-cli.git
+cd x402-cli
 
 # Create virtual environment
 python -m venv venv
@@ -229,7 +229,7 @@ requirements = await server.build_payment_requirements([config])
 
 Include:
 - Python version and OS
-- `x402-tools --version`
+- `x402-cli --version`
 - Minimal reproduction steps
 - Expected vs actual behavior
 - Full error output/traceback

@@ -1,1 +1,1 @@
-"""x402-tools test suite."""
+"""x402-cli test suite."""

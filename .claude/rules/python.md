@@ -1,6 +1,6 @@
-# Python Conventions (x402-tools)
+# Python Conventions (x402-cli)
 
-Target: **Python 3.11+**. Package: `bankofai-x402-tools` (PyPI).
+Target: **Python 3.11+**. Package: `bankofai-x402-cli` (PyPI).
 
 ## Tooling
 
@@ -24,7 +24,7 @@ Both forms are accepted (never both):
 
 ```python
 # Human-readable (decimal)
---decimal 1.25
+--rawAmount 1.25
 
 # Smallest-unit integer
 --amount 1250000000000000

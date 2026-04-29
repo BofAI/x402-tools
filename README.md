@@ -1,23 +1,23 @@
-# `x402-tools` (Python)
+# `x402-cli` (Python)
 
 One-shot BankofAI x402 CLI built on top of the [`bankofai-x402`](https://pypi.org/project/bankofai-x402/) SDK. Two commands:
 
-- **`server`** — start a local x402 payment server (advertises payment terms, accepts a signed payload, settles).
-- **`client <url>`** — pay an x402-protected URL when the server returns `402 Payment Required`.
+- **`serve`** — start a local x402 payment server (advertises payment terms, accepts a signed payload, settles).
+- **`pay <url>`** — pay an x402-protected URL when the server returns `402 Payment Required`.
 
 Full flag matrix and example output: [`FEATURES.md`](FEATURES.md).
 
 ## Install
 
 ```bash
-pip install bankofai-x402-tools
+pip install bankofai-x402-cli
 x402-tools --help
 ```
 
 Or from source:
 
 ```bash
-cd python/x402-tools
+cd python/x402-cli
 pip install -e .
 x402-tools --help
 ```
@@ -59,7 +59,7 @@ This avoids code duplication and keeps the CLI thin (just argument parsing + out
 ## Development
 
 ```bash
-cd python/x402-tools
+cd python/x402-cli
 pip install -e .[dev]
 pytest
 python -m bankofai.x402_tools.cli server --help
