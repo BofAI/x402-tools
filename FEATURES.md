@@ -1,4 +1,4 @@
-# x402-tools (Python) — Features & Examples
+# x402-cli (Python) — Features & Examples
 
 ## Commands
 
@@ -7,7 +7,7 @@
 Start a local x402 payment server.
 
 ```bash
-x402-tools server \
+x402-cli serve \
   --pay-to TJWdoJk8KyrfxZ2iDUqz7fwpXaMkNqPehx \
   --rawAmount 1.25 \
   --network tron:nile \
@@ -26,8 +26,8 @@ x402-tools server \
 Pay an x402-protected URL.
 
 ```bash
-x402-tools client http://127.0.0.1:4020/pay \
-  --max-decimal 1.25 \
+x402-cli pay http://127.0.0.1:4020/pay \
+  --max-rawAmount 1.25 \
   --network tron:nile \
   --token USDT
 ```

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bankofai-x402-cli"
-version = "0.1.0-beta.5"
+version = "0.1.0-beta.6"
 description = "x402-cli — one-shot BankofAI x402 CLI: serve a 402 payment endpoint, or pay one as a client."
 readme = "README.md"
 license = { text = "MIT" }
@@ -23,6 +23,10 @@ dependencies = [
   "click>=8.1.0",
   "httpx>=0.24.0",
   "pydantic>=2.0",
+  "fastapi>=0.110",
+  "uvicorn>=0.27",
+  "eth-account>=0.13",
+  "eth-keys>=0.5",
 ]
 
 [project.optional-dependencies]

@@ -1,6 +1,6 @@
-# x402-tools Specifications
+# x402-cli Specifications
 
-Design documents and protocol specifications for the x402-tools CLI.
+Design documents and protocol specifications for the x402-cli CLI.
 
 ## Contents
 
@@ -31,7 +31,7 @@ Design documents and protocol specifications for the x402-tools CLI.
 
 ### Why These Documents?
 
-The x402-tools CLI has clear, distinct responsibilities:
+The x402-cli CLI has clear, distinct responsibilities:
 
 1. **Server** — Advertise payment terms and verify signatures
 2. **Client** — Discover payment requirements and pay them
@@ -59,9 +59,9 @@ Each command has a well-defined flow that benefits from upfront specification:
 
 ## Reading Order
 
-If you're new to x402-tools, read in this order:
+If you're new to x402-cli, read in this order:
 
-1. **../README.md** — Understand what x402-tools is
+1. **../README.md** — Understand what x402-cli is
 2. **server.md** — Learn how the payment server works
 3. **client.md** — Learn how the payment client works
 4. **smoke-tests.md** — See how we validate the implementation
@@ -83,9 +83,9 @@ When you change behavior:
 
 Example:
 ```
-User asks: "Add --max-decimal validation to client"
+User asks: "Add --max-rawAmount validation to pay"
 
-1. Update specs/client.md → add --max-decimal to parameters
+1. Update specs/client.md → add --max-rawAmount to parameters
 2. Update src/bankofai/x402_tools/client_cmd.py → implement validation
 3. Update specs/smoke-tests.md → add test case
 4. Run: bash .claude/smoke-test.sh → verify
@@ -93,7 +93,7 @@ User asks: "Add --max-decimal validation to client"
 
 ## Protocol Reference
 
-x402-tools implements the **x402 Payment Protocol v2**:
+x402-cli implements the **x402 Payment Protocol v2**:
 
 - **Spec**: See the [x402 repository](https://github.com/x402-foundation/x402/blob/main/specs/protocol.md)
 - **Our implementation**: Uses `bankofai-x402` SDK directly

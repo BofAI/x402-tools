@@ -11,15 +11,15 @@ Full flag matrix and example output: [`FEATURES.md`](FEATURES.md).
 
 ```bash
 pip install bankofai-x402-cli
-x402-tools --help
+x402-cli --help
 ```
 
 Or from source:
 
 ```bash
-cd python/x402-cli
+cd x402-cli
 pip install -e .
-x402-tools --help
+x402-cli --help
 ```
 
 ## Quick start
@@ -31,7 +31,7 @@ x402-cli serve --pay-to TJWdoJk8KyrfxZ2iDUqz7fwpXaMkNqPehx \
 
 # In another shell — pay it
 x402-cli pay http://127.0.0.1:4020/pay \
-  --max-decimal 1.25 --network tron:nile --token USDT
+  --max-rawAmount 1.25 --network tron:nile --token USDT
 ```
 
 ## Design
@@ -59,7 +59,7 @@ This avoids code duplication and keeps the CLI thin (just argument parsing + out
 ## Development
 
 ```bash
-cd python/x402-cli
+cd x402-cli
 pip install -e .[dev]
 pytest
 python -m bankofai.x402_tools.cli server --help

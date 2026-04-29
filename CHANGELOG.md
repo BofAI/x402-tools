@@ -4,6 +4,13 @@ All notable changes to `bankofai-x402-cli` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.6] — 2026-04-29
+
+### Fixed
+
+- **Missing runtime dependencies**: add `fastapi`, `uvicorn`, `eth-account`, `eth-keys` to `pyproject.toml`. beta.5 imports these but did not declare them, breaking fresh installs.
+- **Documentation**: replace residual `x402-tools` references in `README.md`, `FEATURES.md`, `specs/README.md` with `x402-cli`. Replace deprecated `--max-decimal` with `--max-rawAmount`.
+
 ## [0.1.0-beta.5] — 2026-04-29
 
 ### Fixed
