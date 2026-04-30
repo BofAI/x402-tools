@@ -4,6 +4,36 @@ All notable changes to `bankofai-x402-cli` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.11] — 2026-04-30
+
+### Fixed
+
+- **SDK symbol-rename break**: `bankofai-x402` renamed `TokenRegistry` → `AssetRegistry` mid-stream. Fresh installs were fine (PyPI's `bankofai-x402==0.5.9` still has `TokenRegistry`), but environments with a newer SDK already preinstalled (e.g. anaconda3 base) would `ImportError: cannot import name 'TokenRegistry' from 'bankofai.x402'` on `x402-cli --help`. Each call site now does `try TokenRegistry / except → AssetRegistry as TokenRegistry`, so either symbol resolves. No SDK changes; CLI only.
+
+### Changed
+
+- **Module rename**: `src/bankofai/x402_tools/` → `src/bankofai/x402_cli/`. The package on PyPI, the binary, and the docs were all already `x402-cli`; only the importable Python module still carried the old name. Tracebacks, `python -m bankofai.x402_cli.cli`, and the `roundtrip` subprocess invocation now match.
+- **`--network` / `--token` help text** lists every supported value (`tron:mainnet`, `tron:nile`, `tron:shasta`, `eip155:56`, `eip155:97`; `USDT`, `USDC`, `USDD`, `DHLU`) instead of the previous vague "e.g. tron:nile, eip155:97".
+
+### Added
+
+- [`docs/manual-test-guide.md`](docs/manual-test-guide.md) — end-to-end walkthrough covering install → agent-wallet setup → on-chain test for three combinations: TRON Nile + `exact_gasfree`, TRON Nile + `exact_permit`, BSC Testnet + `exact_permit`. Uses an isolated `AGENT_WALLET_DIR` so users don't have to nuke their existing `~/.agent-wallet/`.
+
+### Removed
+
+- README "Design" section (internal-implementation note, not user-facing). The only useful bit (per-network default scheme rationale) moved into a new compact "Schemes" table.
+- README's multi-step agent-wallet setup walkthrough: now two sentences plus a link out to [agent-wallet — Getting Started](https://github.com/BofAI/agent-wallet/blob/main/doc/getting-started.md).
+
+### Verified
+
+Three real-testnet roundtrips against this exact wheel from PyPI:
+
+| Network + scheme | tx hash |
+|---|---|
+| `tron:nile` + `exact_permit` | [`d99103df…`](https://nile.tronscan.org/#/transaction/d99103df399e50875b02ebce919af73638801b682fe00b97c65671aea92e3fe0) |
+| `tron:nile` + `exact_gasfree` | [`133a0edb…`](https://nile.tronscan.org/#/transaction/133a0edb32f394fdb35797e51224745bec35ddcd081b81d00468aab710aa414f) |
+| `eip155:97` + `exact_permit` | [`ff8bff7e…`](https://testnet.bscscan.com/tx/ff8bff7ee35d63a44fb6c9109af7f1c616a2c2863a11f8f25f477d13ada5552f) |
+
 ## [0.1.0-beta.10] — 2026-04-29
 
 ### Fixed
