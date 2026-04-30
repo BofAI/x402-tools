@@ -24,6 +24,10 @@ def setup_logging() -> None:
         level=logging.INFO,
         format="[%(name)s] %(levelname)s: %(message)s",
     )
+    # The SDK emits a startup WARNING when TRON_GRID_API_KEY is unset,
+    # but falling back to the BankofAI-hosted gateway is the intended
+    # default for cli users — not a real warning. Silence it.
+    logging.getLogger("bankofai.x402.utils.tron_client").setLevel(logging.ERROR)
 
 
 @click.group()

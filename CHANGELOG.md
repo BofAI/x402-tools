@@ -4,6 +4,12 @@ All notable changes to `bankofai-x402-cli` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.14] — 2026-04-30
+
+### Changed
+
+- **Silence the SDK's "TRON_GRID_API_KEY is not set" startup warning.** The fallback (`https://hptg.bankofai.io`) is the documented default for cli users, so emitting it as `WARNING` on every invocation is noise, not signal. Cli now sets `bankofai.x402.utils.tron_client` to `ERROR` level in `setup_logging()`. Users who *do* want TronGrid still configure `TRON_GRID_API_KEY` exactly as before.
+
 ## [0.1.0-beta.13] — 2026-04-30
 
 ### Changed
