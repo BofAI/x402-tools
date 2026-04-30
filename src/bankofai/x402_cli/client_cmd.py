@@ -11,6 +11,12 @@ from bankofai.x402.config import NetworkConfig
 from bankofai.x402.encoding import decode_payment_payload, encode_payment_payload
 from bankofai.x402.types import PaymentRequired
 from bankofai.x402.utils.gasfree import GasFreeAPIClient
+
+try:
+    from bankofai.x402 import TokenRegistry
+except ImportError:
+    from bankofai.x402 import AssetRegistry as TokenRegistry  # type: ignore[no-redef]
+
 from bankofai.x402_cli.output import OutputMode, emit
 from bankofai.x402_cli.wallet import resolve_evm_signer, resolve_tron_signer
 
@@ -107,8 +113,6 @@ async def cmd_client(
             # --token (symbol) is filtered here before delegating.
             candidates = list(payment_required.accepts)
             if token:
-                from bankofai.x402.tokens import TokenRegistry
-
                 wanted = token.upper()
                 filtered = []
                 for req in candidates:
@@ -141,7 +145,6 @@ async def cmd_client(
                     )
             if max_amount:
                 from decimal import Decimal
-                from bankofai.x402.tokens import TokenRegistry
 
                 token_info = TokenRegistry.find_by_address(selected.network, selected.asset)
                 decimals = token_info.decimals if token_info else 6

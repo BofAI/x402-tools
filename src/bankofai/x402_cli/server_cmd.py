@@ -8,12 +8,16 @@ from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
-from bankofai.x402 import TokenRegistry
 from bankofai.x402.encoding import decode_payment_payload, encode_payment_payload
 from bankofai.x402.facilitator import FacilitatorClient
 from bankofai.x402.server import ResourceConfig, X402Server
 from bankofai.x402.types import PaymentPayload
 import uvicorn
+
+try:
+    from bankofai.x402 import TokenRegistry
+except ImportError:
+    from bankofai.x402 import AssetRegistry as TokenRegistry  # type: ignore[no-redef]
 
 from bankofai.x402_cli.output import OutputMode, emit
 from bankofai.x402_cli.schemes import is_known_scheme, pick_scheme
