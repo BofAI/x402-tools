@@ -7,6 +7,7 @@ One-shot BankofAI x402 CLI built on top of the [`bankofai-x402`](https://pypi.or
 - **`roundtrip`** — one-shot test: spin up `serve` in the background, run `pay` against it, shut down.
 
 Full flag matrix and example output: [`FEATURES.md`](FEATURES.md).
+Hands-on walkthrough (TRON GasFree + TRON/BSC permit, copy-paste commands): [`docs/manual-test-guide.md`](docs/manual-test-guide.md).
 
 ## Install
 
