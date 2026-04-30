@@ -4,6 +4,16 @@ All notable changes to `bankofai-x402-cli` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.13] — 2026-04-30
+
+### Changed
+
+- **README is now English-only** so the PyPI project page renders correctly for non-CN readers. Same structure and content as b12 — the rewrite into a user-facing layout (install → wallet → command roles → copy-paste GasFree transfer → other-network templates → amount units → common errors) is unchanged. Wallet/setup details continue to live in [agent-wallet's getting-started doc](https://github.com/BofAI/agent-wallet/blob/main/doc/getting-started.md), and the multi-scheme hands-on walkthrough is still in [docs/manual-test-guide.md](docs/manual-test-guide.md).
+
+### Verified
+
+Same on-chain test matrix as b12 (no code changes between b12 and b13), so the b12 testnet roundtrips remain authoritative for runtime behavior.
+
 ## [0.1.0-beta.12] — 2026-04-30
 
 ### Fixed
