@@ -24,35 +24,11 @@ pip install -e .
 x402-cli --help
 ```
 
-## Wallet — agent-wallet
+## Wallet
 
-x402-cli signs every payment through [`bankofai-agent-wallet`](https://pypi.org/project/bankofai-agent-wallet/) (installed as a transitive dependency). agent-wallet provides one signing surface that resolves wallets in this priority order:
+Signing is delegated to [`bankofai-agent-wallet`](https://github.com/BofAI/agent-wallet) (transitive dep). It picks up either an encrypted local wallet (managed by the `agent-wallet` CLI) or a private-key / mnemonic env var. One key derives both EVM and TRON addresses — there is **no `--wallet` flag**, just install once and `x402-cli` picks the wallet up automatically.
 
-1. **Encrypted local store** — wallets you've added via `agent-wallet add`, kept under `~/.agent-wallet/` and unlocked with a master password.
-2. **Environment variables** — fallback if no local store is configured. The most common variables (already understood by `agent-wallet`):
-   - `AGENT_WALLET_PRIVATE_KEY` or `TRON_PRIVATE_KEY` — 0x-prefixed private key
-   - `AGENT_WALLET_MNEMONIC` or `TRON_MNEMONIC` — BIP-39 mnemonic
-   - `AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX` (optional, mnemonic only)
-
-A single private key derives both an EVM address and a TRON address — you don't need separate keys per chain.
-
-### One-time setup
-
-Either initialize the encrypted local store:
-
-```bash
-agent-wallet start         # creates master password + a default wallet
-agent-wallet list          # see configured wallets
-agent-wallet use <name>    # set active wallet
-```
-
-…or just export an environment variable in the shell where `x402-cli` runs:
-
-```bash
-export TRON_PRIVATE_KEY=0x<your-hex-private-key>
-```
-
-That's it — `x402-cli serve` and `x402-cli pay` both pick up the wallet automatically. There is no `--wallet` flag.
+Setup steps and full env var list: [agent-wallet — Getting Started](https://github.com/BofAI/agent-wallet/blob/main/doc/getting-started.md).
 
 ## Amount conventions
 
@@ -85,23 +61,15 @@ x402-cli roundtrip --pay-to TJWdoJk8KyrfxZ2iDUqz7fwpXaMkNqPehx \
   --amount 1.25 --network tron:nile --token USDT
 ```
 
-## Design
+## Schemes
 
-Unlike the TypeScript version which implements its own HTTP server and facilitator client, the Python CLI directly uses the SDK's `X402Server` and `FacilitatorClient` from [`bankofai-x402`](https://pypi.org/project/bankofai-x402/):
+Auto-selected per `(network, token)` from a small registry; override with `--scheme <name>`.
 
-```python
-from bankofai.x402.server import X402Server
-from bankofai.x402.facilitator import FacilitatorClient
-
-server = X402Server()  # No duplication
-facilitator = FacilitatorClient(base_url)  # SDK provided
-```
-
-This avoids code duplication and keeps the CLI thin (just argument parsing + output formatting).
-
-### Default scheme
-
-For TRON USDT the default scheme is `exact_gasfree` rather than `exact_permit`: hosted/self-hosted `exact_permit` settlement can verify the user's signature but still fail during the on-chain `permitTransferFrom` broadcast (TRC-2612 nuances). GasFree side-steps that by relaying through a custodial address. Override with `--scheme exact_permit` if you've hardened your `permit` flow.
+| Network | Token | Default | Why |
+|---|---|---|---|
+| `eip155:56` / `eip155:97` (BSC) | USDT, USDC | `exact_permit` | EIP-2612 |
+| `eip155:97` (BSC Testnet) | DHLU | `exact` | ERC-3009 |
+| `tron:mainnet` / `tron:nile` / `tron:shasta` | USDT, USDD | `exact_gasfree` | Hosted `exact_permit` settlement can verify the signature but still revert during on-chain `permitTransferFrom`; GasFree relays through a custodial address. Override with `--scheme exact_permit` if you've hardened the path. |
 
 ## Environment variables
 
