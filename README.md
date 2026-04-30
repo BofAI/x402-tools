@@ -1,90 +1,107 @@
-# `x402-cli` (Python)
+# `x402-cli`
 
-One-shot BankofAI x402 CLI built on top of the [`bankofai-x402`](https://pypi.org/project/bankofai-x402/) SDK. Three commands:
+x402 协议的 BankofAI 命令行客户端 —— 付款、收款、或本地一键自测整个流程。**不写代码**就能在链上转账。
 
-- **`serve`** — start a local x402 payment server (advertises payment terms, accepts a signed payload, settles).
-- **`pay <url>`** — pay an x402-protected URL when the server returns `402 Payment Required`.
-- **`roundtrip`** — one-shot test: spin up `serve` in the background, run `pay` against it, shut down.
-
-Full flag matrix and example output: [`FEATURES.md`](FEATURES.md).
-Hands-on walkthrough (TRON GasFree + TRON/BSC permit, copy-paste commands): [`docs/manual-test-guide.md`](docs/manual-test-guide.md).
-
-## Install
+## 1. 安装
 
 ```bash
-pip install bankofai-x402-cli
-x402-cli --help
+pip install --pre bankofai-x402-cli
+x402-cli --version
 ```
 
-Or from source:
+## 2. 设置钱包（一次性）
+
+x402-cli 把签名委托给 [`bankofai-agent-wallet`](https://github.com/BofAI/agent-wallet)。最快的设置方式 —— 把你的 32 字节 hex 私钥导入：
 
 ```bash
-cd x402-cli
-pip install -e .
-x402-cli --help
+agent-wallet start raw_secret \
+  --wallet-id payer \
+  --private-key 0x<你的-32字节-hex-私钥>
 ```
 
-## Wallet
+> 一把私钥同时派生 EVM 地址和 TRON 地址，**不需要为每条链单独配钱包**。
+>
+> 加密本地仓库、助记词、Privy 托管等其它选项：[agent-wallet — Getting Started](https://github.com/BofAI/agent-wallet/blob/main/doc/getting-started.md)。
 
-Signing is delegated to [`bankofai-agent-wallet`](https://github.com/BofAI/agent-wallet) (transitive dep). It picks up either an encrypted local wallet (managed by the `agent-wallet` CLI) or a private-key / mnemonic env var. One key derives both EVM and TRON addresses — there is **no `--wallet` flag**, just install once and `x402-cli` picks the wallet up automatically.
+## 3. 三个命令分别是干啥的
 
-Setup steps and full env var list: [agent-wallet — Getting Started](https://github.com/BofAI/agent-wallet/blob/main/doc/getting-started.md).
+| 命令 | 谁用 | 干啥 |
+|---|---|---|
+| **`x402-cli pay <url>`** | 付款方 | 访问一个 URL，它返回 `402 Payment Required` 时，cli 帮你签名 + 付款 + 拿到响应 |
+| **`x402-cli serve`** | 收款方 | 在本地起一个 `402` 收款端点，访问者付费才能拿到响应 |
+| **`x402-cli roundtrip`** | 自测 / 一键转账 | 一条命令同时演两边：起 `serve` → 自己 `pay` → 关掉。**最常用于"装好之后做一笔最小转账验证一下"** |
 
-## Amount conventions
+## 4. 复制粘贴：一笔 GasFree 转账（TRON 主网）
 
-Two mutually exclusive forms are accepted everywhere a price is taken:
+把下面命令里的 `<收款方-TRON-地址>` 换成 `T...` 开头的真实地址，回车：
+
+```bash
+x402-cli roundtrip \
+  --pay-to <收款方-TRON-地址> \
+  --amount 1 \
+  --token USDT \
+  --network tron:mainnet
+```
+
+成功输出（节选）：
+
+```json
+{
+  "ok": true,
+  "result": {
+    "scheme": "exact_gasfree",
+    "amount": "1000000",
+    "paid": true,
+    "transaction": "<64-hex-tx-hash>"
+  }
+}
+```
+
+到 `https://tronscan.org/#/transaction/<tx-hash>` 看链上记录。
+
+> **为什么这是 GasFree？** TRON 主网 USDT 默认走 `exact_gasfree` 协议 —— GasFree relayer 帮你付链上 TRX gas，**你的主钱包不需要任何 TRX 余额**。USDT 从你的 GasFree custodial 地址扣（地址由你的私钥确定性派生）。
+>
+> **第一次使用前**需要先给该 GasFree custodial 地址充值一些 USDT。详细步骤见 [docs/manual-test-guide.md → Walkthrough A](docs/manual-test-guide.md#4-walkthrough-a--tron-nile--exact_gasfree)。
+
+### 其它网络的命令模板
+
+| 网络 | 把 `--network` 换成 | 备注 |
+|---|---|---|
+| TRON 主网（默认 GasFree） | `tron:mainnet` | 主钱包不需要 TRX |
+| BSC 主网（USDT permit） | `eip155:56` | 主钱包**需要 BNB 付 gas** |
+| TRON Nile 测试网 | `tron:nile` | [水龙头](https://nileex.io/join/getJoinPage) |
+| BSC Testnet | `eip155:97` | [水龙头](https://testnet.bnbchain.org/faucet-smart) |
+
+想强制用某种 settlement 协议（不走默认）：在命令里加 `--scheme exact_gasfree | exact_permit | exact`。
+
+## 5. 金额单位
 
 ```
 rawAmount = amount × 10^decimals
 ```
 
-| Flag | Meaning | Example (USDT, 6 decimals) |
-|---|---|---|
-| `--amount <decimal>` | Human-readable | `1.25` |
-| `--rawAmount <integer>` | Smallest on-chain unit | `1250000` |
-
-Pay-side caps mirror the same split: `--max-amount` (human-readable) / `--max-rawAmount` (smallest unit).
-
-## Quick start
-
-```bash
-# Start a server that charges 1.25 USDT on TRON Nile
-x402-cli serve --pay-to TJWdoJk8KyrfxZ2iDUqz7fwpXaMkNqPehx \
-  --amount 1.25 --network tron:nile
-
-# In another shell — pay it (cap human-readable)
-x402-cli pay http://127.0.0.1:4020/pay \
-  --max-amount 1.25 --network tron:nile --token USDT
-
-# Or one-shot end-to-end on a single line
-x402-cli roundtrip --pay-to TJWdoJk8KyrfxZ2iDUqz7fwpXaMkNqPehx \
-  --amount 1.25 --network tron:nile --token USDT
-```
-
-## Schemes
-
-Auto-selected per `(network, token)` from a small registry; override with `--scheme <name>`.
-
-| Network | Token | Default | Why |
-|---|---|---|---|
-| `eip155:56` / `eip155:97` (BSC) | USDT, USDC | `exact_permit` | EIP-2612 |
-| `eip155:97` (BSC Testnet) | DHLU | `exact` | ERC-3009 |
-| `tron:mainnet` / `tron:nile` / `tron:shasta` | USDT, USDD | `exact_gasfree` | Hosted `exact_permit` settlement can verify the signature but still revert during on-chain `permitTransferFrom`; GasFree relays through a custodial address. Override with `--scheme exact_permit` if you've hardened the path. |
-
-## Environment variables
-
-| Var | Purpose |
+| 你想说的 | 用哪个 flag |
 |---|---|
-| `AGENT_WALLET_PRIVATE_KEY` / `TRON_PRIVATE_KEY` | Wallet private key, picked up by agent-wallet's env provider |
-| `AGENT_WALLET_MNEMONIC` / `TRON_MNEMONIC` | Alternative: BIP-39 mnemonic (with optional `_ACCOUNT_INDEX`) |
-| `TRON_GRID_API_KEY` | Optional, forwarded to SDK for TronGrid |
-| `FACILITATOR_URL` | Override facilitator endpoint (default `https://facilitator.bankofai.io`) |
+| "1.25 USDT"（人类可读小数） | `--amount 1.25` |
+| `1250000`（链上最小单位整数，USDT 是 6 decimals） | `--rawAmount 1250000` |
 
-## Development
+`pay` 命令的支付上限同理：`--max-amount` / `--max-rawAmount`。
 
-```bash
-cd x402-cli
-pip install -e .[dev]
-pytest
-x402-cli --help
-```
+## 6. 常见错误
+
+| 报错 | 原因 + 解决 |
+|---|---|
+| `Insufficient GasFree balance` | GasFree custodial 地址余额不够，[充值步骤](docs/manual-test-guide.md#42-top-up-gasfreeaddress) |
+| `cannot import name 'TokenRegistry' …` | 装的是 ≤0.1.0b10 旧版。升级：`pip install --pre --upgrade bankofai-x402-cli` |
+| `resolve_wallet could not find a wallet source` | 还没设钱包，回到第 2 步 |
+| 命令卡在 `Master Password:` | `local_secure` 钱包没持久化密码。重做时加 `--save-runtime-secrets` |
+| `too many pending transfers` | GasFree relayer 限流，等 30~60s 再跑 |
+
+更多排错：[docs/manual-test-guide.md → Troubleshooting](docs/manual-test-guide.md#7-troubleshooting)。
+
+## 看更多
+
+- [docs/manual-test-guide.md](docs/manual-test-guide.md) — 从安装到链上 tx 的完整 walkthrough，含 TRON GasFree、TRON permit、BSC permit 三种场景
+- [FEATURES.md](FEATURES.md) — 完整 flag 矩阵和命令输出示例
+- [agent-wallet 文档](https://github.com/BofAI/agent-wallet) — 钱包高级设置（Privy / 助记词 / 加密仓库）
+- [bankofai-x402 SDK](https://pypi.org/project/bankofai-x402/) — 协议本身和编程接口（如果你想直接在代码里集成而不是用 cli）

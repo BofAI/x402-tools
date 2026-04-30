@@ -4,6 +4,33 @@ All notable changes to `bankofai-x402-cli` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.12] — 2026-04-30
+
+### Fixed
+
+- **Pin all dependency upper bounds** so a future major-version release of any dep can no longer silently land in user environments and break us, repeating the b10/v2-SDK incident:
+  - `bankofai-x402>=0.5.9,<0.6` (was `>=0.5.9` — the one that bit us)
+  - `bankofai-agent-wallet>=2.4,<3` (was `>=2.4`)
+  - `pydantic>=2.0,<3` (was `>=2.0`)
+  - `fastapi>=0.110,<1.0` (was `>=0.110`)
+  - `uvicorn>=0.27,<1.0` (was `>=0.27`)
+  - `click>=8.1.0,<10` (was `>=8.1.0`)
+  - `httpx`, `web3`, `tronpy` already had caps — kept as-is.
+
+### Changed
+
+- **README rewritten for end users**, not contributors. New flow: install → wallet setup (one command + link out) → what each of the three commands is for → a copy-paste GasFree TRON-mainnet transfer → other-network templates → amount units → common errors. Removed the "Design", "Environment variables", and "Development" sections.
+
+### Verified
+
+Three real-testnet roundtrips against the b12 wheel from a clean venv:
+
+| Network + scheme | tx hash |
+|---|---|
+| `tron:nile` + `exact_permit` | [`887c65b6…`](https://nile.tronscan.org/#/transaction/887c65b63a81009ca7ccc1545575189bf4b604174205187638189b3d61e1cdcb) |
+| `tron:nile` + `exact_gasfree` | [`524d01f8…`](https://nile.tronscan.org/#/transaction/524d01f8ac1451bfd7d0fd835922c7930a4714749efe28471bd6a10dc064375b) |
+| `eip155:97` + `exact_permit` | [`90bd524e…`](https://testnet.bscscan.com/tx/90bd524e7cda5a9587ab7212e3a9efea5e0725fe4d249e53b4a460f89bdd6e4e) |
+
 ## [0.1.0-beta.11] — 2026-04-30
 
 ### Fixed
