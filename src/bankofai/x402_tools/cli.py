@@ -52,12 +52,19 @@ def cli() -> None:
 @click.option(
     "--network",
     required=True,
-    help="Payment network, e.g. tron:nile, eip155:97",
+    help=(
+        "Payment network (CAIP-2 ID). Supported: "
+        "tron:mainnet, tron:nile, tron:shasta, "
+        "eip155:56 (BSC), eip155:97 (BSC Testnet)."
+    ),
 )
 @click.option(
     "--token",
     default="USDT",
-    help="Token symbol from the registry (default: USDT)",
+    help=(
+        "Token symbol from the registry. "
+        "Supported: USDT, USDC, USDD, DHLU. Default: USDT."
+    ),
 )
 @click.option(
     "--asset",
@@ -154,12 +161,21 @@ def serve(
 @click.option(
     "--network",
     type=str,
-    help="Require a specific network",
+    help=(
+        "Require a specific network (CAIP-2 ID). Supported: "
+        "tron:mainnet, tron:nile, tron:shasta, "
+        "eip155:56 (BSC), eip155:97 (BSC Testnet). "
+        "Omit to accept any network the server advertises."
+    ),
 )
 @click.option(
     "--token",
     type=str,
-    help="Require a specific token (default: USDT)",
+    help=(
+        "Require a specific token symbol. "
+        "Supported: USDT, USDC, USDD, DHLU. "
+        "Omit to accept any token the server advertises."
+    ),
 )
 @click.option(
     "--scheme",
@@ -245,12 +261,19 @@ def pay(
 @click.option(
     "--network",
     required=True,
-    help="Payment network, e.g. tron:nile, eip155:97",
+    help=(
+        "Payment network (CAIP-2 ID). Supported: "
+        "tron:mainnet, tron:nile, tron:shasta, "
+        "eip155:56 (BSC), eip155:97 (BSC Testnet)."
+    ),
 )
 @click.option(
     "--token",
     default="USDT",
-    help="Token symbol from the registry (default: USDT)",
+    help=(
+        "Token symbol from the registry. "
+        "Supported: USDT, USDC, USDD, DHLU. Default: USDT."
+    ),
 )
 @click.option(
     "--asset",
