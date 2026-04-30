@@ -11,8 +11,8 @@ from bankofai.x402.config import NetworkConfig
 from bankofai.x402.encoding import decode_payment_payload, encode_payment_payload
 from bankofai.x402.types import PaymentRequired
 from bankofai.x402.utils.gasfree import GasFreeAPIClient
-from bankofai.x402_tools.output import OutputMode, emit
-from bankofai.x402_tools.wallet import resolve_evm_signer, resolve_tron_signer
+from bankofai.x402_cli.output import OutputMode, emit
+from bankofai.x402_cli.wallet import resolve_evm_signer, resolve_tron_signer
 
 logger = logging.getLogger(__name__)
 

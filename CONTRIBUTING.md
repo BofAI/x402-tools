@@ -39,10 +39,10 @@ pre-commit install
 pytest
 
 # Run with coverage
-pytest --cov=src/bankofai/x402_tools
+pytest --cov=src/bankofai/x402_cli
 
 # Run type checking
-mypy src/bankofai/x402_tools
+mypy src/bankofai/x402_cli
 
 # Run smoke tests
 bash .claude/smoke-test.sh
@@ -189,7 +189,7 @@ pytest tests/test_schemes.py::test_pick_scheme_bsc_testnet_usdt
 pytest -v
 
 # Run with coverage
-pytest --cov=src/bankofai/x402_tools --cov-report=html
+pytest --cov=src/bankofai/x402_cli --cov-report=html
 ```
 
 ## Documentation

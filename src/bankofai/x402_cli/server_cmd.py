@@ -15,8 +15,8 @@ from bankofai.x402.server import ResourceConfig, X402Server
 from bankofai.x402.types import PaymentPayload
 import uvicorn
 
-from bankofai.x402_tools.output import OutputMode, emit
-from bankofai.x402_tools.schemes import is_known_scheme, pick_scheme
+from bankofai.x402_cli.output import OutputMode, emit
+from bankofai.x402_cli.schemes import is_known_scheme, pick_scheme
 
 logger = logging.getLogger(__name__)
 

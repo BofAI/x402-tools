@@ -12,10 +12,10 @@ from typing import Any
 
 import click
 
-from bankofai.x402_tools import __version__
-from bankofai.x402_tools.output import OutputMode, emit_json, emit_human
-from bankofai.x402_tools.server_cmd import cmd_server
-from bankofai.x402_tools.client_cmd import cmd_client
+from bankofai.x402_cli import __version__
+from bankofai.x402_cli.output import OutputMode, emit_json, emit_human
+from bankofai.x402_cli.server_cmd import cmd_server
+from bankofai.x402_cli.client_cmd import cmd_client
 
 
 def setup_logging() -> None:
@@ -337,7 +337,7 @@ def roundtrip(
             [
                 sys.executable,
                 "-m",
-                "bankofai.x402_tools.cli",
+                "bankofai.x402_cli.cli",
                 "serve",
                 "--pay-to", pay_to,
                 "--network", network,

@@ -15,7 +15,7 @@ The CLI directly uses the SDK's `X402Server` and `FacilitatorClient` — no reim
 
 ```
 .
-├── src/bankofai/x402_tools/     # Implementation
+├── src/bankofai/x402_cli/     # Implementation
 │   ├── cli.py                   # Click CLI entry point
 │   ├── server_cmd.py            # Server command (402 challenge + settlement)
 │   ├── client_cmd.py            # Client command (probe + sign + retry)

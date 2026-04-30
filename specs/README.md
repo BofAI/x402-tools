@@ -86,7 +86,7 @@ Example:
 User asks: "Add --max-rawAmount validation to pay"
 
 1. Update specs/client.md → add --max-rawAmount to parameters
-2. Update src/bankofai/x402_tools/client_cmd.py → implement validation
+2. Update src/bankofai/x402_cli/client_cmd.py → implement validation
 3. Update specs/smoke-tests.md → add test case
 4. Run: bash .claude/smoke-test.sh → verify
 ```

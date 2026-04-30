@@ -51,7 +51,7 @@ run_test() {
 
 # Start server in background
 echo "[Setup] Starting server..."
-python3 -m bankofai.x402_tools.cli serve \
+python3 -m bankofai.x402_cli.cli serve \
   --pay-to "$TEST_PAY_TO" \
   --amount "$TEST_AMOUNT" \
   --network "$TEST_NETWORK" \

@@ -321,7 +321,7 @@ Verify on BscScan: `https://testnet.bscscan.com/tx/<tx-hash>`.
 | Settlement reverts with `permit`-related error (walkthrough B/C) | Token contract's `permit` domain doesn't match SDK's | Use `exact_gasfree` on TRON, or `exact` on EVM if the token supports ERC-3009 |
 | `web3 not available for approval` | Stale environment without `web3` (shouldn't happen on ≥ beta.10) | `pip install --upgrade bankofai-x402-cli` |
 | `deadline too soon` (TRON) | System clock skew | Sync system time (NTP) |
-| `Address already in use: 4020` | Previous `serve` not cleaned up | `pkill -f bankofai.x402_tools` or use `--port 4021` |
+| `Address already in use: 4020` | Previous `serve` not cleaned up | `pkill -f bankofai.x402_cli` or use `--port 4021` |
 
 ---
 

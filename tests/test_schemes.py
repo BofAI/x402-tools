@@ -1,6 +1,6 @@
 """Tests for schemes module."""
 
-from bankofai.x402_tools.schemes import pick_scheme, is_known_scheme
+from bankofai.x402_cli.schemes import pick_scheme, is_known_scheme
 
 
 def test_pick_scheme_tron_nile_usdt() -> None:

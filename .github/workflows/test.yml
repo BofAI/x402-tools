@@ -33,11 +33,11 @@ jobs:
 
       - name: Type check with mypy
         run: |
-          mypy src/bankofai/x402_tools
+          mypy src/bankofai/x402_cli
 
       - name: Run tests with pytest
         run: |
-          pytest tests/ -v --cov=src/bankofai/x402_tools --cov-report=xml
+          pytest tests/ -v --cov=src/bankofai/x402_cli --cov-report=xml
 
       - name: Run smoke tests
         run: |

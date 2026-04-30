@@ -1,4 +1,4 @@
-"""Scheme auto-selection for x402-tools."""
+"""Scheme auto-selection for x402-cli."""
 
 from typing import Literal
 
