@@ -17,6 +17,7 @@ try:
 except ImportError:
     from bankofai.x402 import AssetRegistry as TokenRegistry  # type: ignore[no-redef]
 
+from bankofai.x402_cli.errors import classify
 from bankofai.x402_cli.output import OutputMode, emit
 from bankofai.x402_cli.wallet import resolve_evm_signer, resolve_tron_signer
 
@@ -198,14 +199,15 @@ async def cmd_client(
             )
 
             if retry_response.status_code != 200:
-                result = {
-                    "url": url,
-                    "status": retry_response.status_code,
-                    "error": retry_response.text[:500],
-                }
+                # Server returned a non-200 on the retry — surface it as a
+                # structured error with hint, not as a "successful" envelope.
+                body = retry_response.text[:500]
+                pseudo = RuntimeError(
+                    f"HTTP {retry_response.status_code} from {url}: {body}"
+                )
                 emit(
                     command="client",
-                    result=result,
+                    error=classify(pseudo).to_dict(),
                     mode=output_mode,
                 )
                 return
@@ -243,11 +245,10 @@ async def cmd_client(
             )
 
     except Exception as err:
-        error_msg = str(err) or repr(err)
-        logger.error(f"Client error: {error_msg}", exc_info=True)
+        logger.error(f"Client error: {err}", exc_info=True)
         emit(
             command="client",
-            error={"code": "IO_ERROR", "message": error_msg},
+            error=classify(err).to_dict(),
             mode=output_mode,
         )
 

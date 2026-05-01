@@ -19,6 +19,7 @@ try:
 except ImportError:
     from bankofai.x402 import AssetRegistry as TokenRegistry  # type: ignore[no-redef]
 
+from bankofai.x402_cli.errors import classify
 from bankofai.x402_cli.output import OutputMode, emit
 from bankofai.x402_cli.schemes import is_known_scheme, pick_scheme
 
@@ -291,10 +292,9 @@ async def cmd_server(
         await server_instance.serve()
 
     except Exception as err:
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Server error: {err}", exc_info=True)
         emit(
             command="server",
-            error={"code": "IO_ERROR", "message": str(err)},
+            error=classify(err).to_dict(),
             mode=output_mode,
         )

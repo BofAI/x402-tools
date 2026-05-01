@@ -30,10 +30,30 @@ def setup_logging() -> None:
     logging.getLogger("bankofai.x402.utils.tron_client").setLevel(logging.ERROR)
 
 
-@click.group()
+@click.group(
+    no_args_is_help=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 @click.version_option(__version__, prog_name="x402-cli")
 def cli() -> None:
-    """One-shot BankofAI x402 CLI for serving and paying x402 endpoints."""
+    """BankofAI x402 CLI — pay x402-protected URLs, run a paywall, or test the full flow.
+
+    \b
+    Common flows:
+      x402-cli pay <url>          Pay an x402-protected URL.
+      x402-cli serve --pay-to ... Run a 402 endpoint that charges to your address.
+      x402-cli roundtrip ...      One-shot transfer: spin up serve → pay → tear down.
+
+    \b
+    First-time setup (one command):
+      agent-wallet start raw_secret --wallet-id payer --private-key 0x...
+
+    \b
+    Example — GasFree USDT transfer on TRON mainnet:
+      x402-cli roundtrip --pay-to T... --amount 1 --network tron:mainnet --token USDT
+
+    See https://github.com/BofAI/x402-cli for the full guide.
+    """
     setup_logging()
 
 
@@ -83,7 +103,13 @@ def cli() -> None:
 @click.option(
     "--scheme",
     type=str,
-    help="x402 scheme: exact_permit | exact | exact_gasfree",
+    help=(
+        "x402 settlement scheme. Supported: "
+        "exact_gasfree (TRON only, gasless), "
+        "exact_permit (EIP-2612/TIP-2612 permit, payer pays gas), "
+        "exact (ERC-3009 transferWithAuthorization). "
+        "Omit to let cli auto-pick from the (network, token) registry."
+    ),
 )
 @click.option(
     "--host",
@@ -292,7 +318,13 @@ def pay(
 @click.option(
     "--scheme",
     type=str,
-    help="x402 scheme: exact_permit | exact | exact_gasfree",
+    help=(
+        "x402 settlement scheme. Supported: "
+        "exact_gasfree (TRON only, gasless), "
+        "exact_permit (EIP-2612/TIP-2612 permit, payer pays gas), "
+        "exact (ERC-3009 transferWithAuthorization). "
+        "Omit to let cli auto-pick from the (network, token) registry."
+    ),
 )
 @click.option(
     "--host",

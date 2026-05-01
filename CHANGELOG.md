@@ -4,6 +4,31 @@ All notable changes to `bankofai-x402-cli` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.15] — 2026-05-01
+
+### Changed
+
+- **Dependency tree cleaned up**:
+  - Removed direct `web3` and `tronpy` declarations from `pyproject.toml`. Cli source never imports either; they are pulled in through the SDK's own `[evm,tron]` extras now (`bankofai-x402[evm,tron]>=0.5.9,<0.6`). Version ranges for those two libs are now owned by the SDK, not duplicated here.
+  - Net dependency graph and resolved versions are unchanged for end users.
+- **`x402-cli` with no arguments now prints `--help`** instead of an empty error. `-h` is also accepted as an alias for `--help`.
+- **Top-level `--help` includes a "Common flows" section, a one-line first-time-setup hint, and a copy-paste GasFree example**, so users see what to do without leaving the terminal.
+- **`--scheme` help text** lists every supported value (`exact_gasfree` / `exact_permit` / `exact`) with a one-phrase explanation, plus "omit to auto-pick from the (network, token) registry."
+
+### Added
+
+- **Friendly error classifier** (`bankofai.x402_cli.errors`). Common failure modes now ship with a `hint` line in the error envelope:
+  - `WALLET_NOT_CONFIGURED`, `WALLET_CONFIG_CORRUPT` — agent-wallet missing / corrupt
+  - `INSUFFICIENT_GASFREE_BALANCE`, `GASFREE_NOT_ACTIVATED` — GasFree-specific
+  - `INSUFFICIENT_GAS` — EVM/permit path with no native gas token
+  - `RATE_LIMITED`, `DEADLINE_TOO_SOON`, `PERMIT_REVERTED`
+  - `SDK_API_DRIFT` — for the TokenRegistry/AssetRegistry case from b11
+  - Anything unmatched falls back to `IO_ERROR` with a pointer to the troubleshooting doc.
+
+### Fixed
+
+- `specs/smoke-tests.md` example referenced the long-removed `--decimal` flag. Updated to `--amount`.
+
 ## [0.1.0-beta.14] — 2026-04-30
 
 ### Changed
