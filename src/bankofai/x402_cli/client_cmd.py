@@ -15,7 +15,7 @@ from bankofai.x402.utils.gasfree import GasFreeAPIClient
 try:
     from bankofai.x402 import TokenRegistry
 except ImportError:
-    from bankofai.x402 import AssetRegistry as TokenRegistry  # type: ignore[no-redef]
+    from bankofai.x402 import AssetRegistry as TokenRegistry  # noqa: F401
 
 from bankofai.x402_cli.errors import classify
 from bankofai.x402_cli.output import OutputMode, emit
@@ -265,7 +265,7 @@ def _register_client_mechanisms(
     signer: Any,
 ) -> None:
     """Register payment mechanisms based on required payment options."""
-    networks_schemes = {}
+    networks_schemes: dict[str, set[str]] = {}
     for req in requires:
         network = req.network
         scheme = req.scheme

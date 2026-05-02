@@ -14,7 +14,7 @@ import uvicorn
 try:
     from bankofai.x402 import TokenRegistry
 except ImportError:
-    from bankofai.x402 import AssetRegistry as TokenRegistry  # type: ignore[no-redef]
+    from bankofai.x402 import AssetRegistry as TokenRegistry  # noqa: F401
 
 from bankofai.x402_cli.errors import classify
 from bankofai.x402_cli.output import OutputMode, emit
@@ -183,11 +183,11 @@ async def cmd_server(
         app = FastAPI()
 
         @app.get("/health")
-        async def health() -> dict:
+        async def health() -> dict[str, bool]:
             return {"ok": True}
 
         @app.get("/.well-known/x402")
-        async def well_known() -> dict:
+        async def well_known() -> dict[str, str]:
             return {
                 "network": network,
                 "scheme": scheme,
