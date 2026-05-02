@@ -68,5 +68,10 @@ disallow_untyped_defs = true
 # Third-party packages that don't ship a py.typed marker. We don't get type
 # checking against them, but we don't want CI to drown in 'import-untyped'.
 [[tool.mypy.overrides]]
-module = ["bankofai.x402", "bankofai.x402.*"]
+module = [
+  "bankofai.x402",
+  "bankofai.x402.*",
+  "agent_wallet",
+  "agent_wallet.*",
+]
 ignore_missing_imports = true
