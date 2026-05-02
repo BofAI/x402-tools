@@ -2,18 +2,14 @@
 """x402-cli — serve or pay x402 endpoints."""
 
 import asyncio
-import json
 import logging
-import os
-import signal
 import subprocess
 import time
-from typing import Any
 
 import click
 
 from bankofai.x402_cli import __version__
-from bankofai.x402_cli.output import OutputMode, emit_json, emit_human
+from bankofai.x402_cli.output import OutputMode
 from bankofai.x402_cli.server_cmd import cmd_server
 from bankofai.x402_cli.client_cmd import cmd_client
 

@@ -1,10 +1,9 @@
 """Tests for output module."""
 
 import json
-from io import StringIO
 from unittest.mock import patch
 
-from bankofai.x402_cli.output import emit, emit_json, emit_human, OutputMode
+from bankofai.x402_cli.output import emit, emit_human
 
 
 def test_emit_json_success() -> None:

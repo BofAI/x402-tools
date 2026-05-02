@@ -1,10 +1,7 @@
 """Server command implementation using Python SDK's X402Server."""
 
-import json
 import logging
-import uuid
 from decimal import Decimal
-from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
