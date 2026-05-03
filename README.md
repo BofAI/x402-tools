@@ -1,66 +1,107 @@
-# `x402-tools` (Python)
+# `x402-cli`
 
-One-shot BankofAI x402 CLI built on top of the [`bankofai-x402`](https://pypi.org/project/bankofai-x402/) SDK. Two commands:
+The BankofAI command-line client for the x402 protocol — pay any x402-protected URL, run your own paywall, or test the full handshake locally. **No code required.**
 
-- **`server`** — start a local x402 payment server (advertises payment terms, accepts a signed payload, settles).
-- **`client <url>`** — pay an x402-protected URL when the server returns `402 Payment Required`.
-
-Full flag matrix and example output: [`FEATURES.md`](FEATURES.md).
-
-## Install
+## 1. Install
 
 ```bash
-pip install bankofai-x402-tools
-x402-tools --help
+pip install --pre bankofai-x402-cli
+x402-cli --version
 ```
 
-Or from source:
+## 2. Set up a wallet (one-time)
+
+`x402-cli` delegates all signing to [`bankofai-agent-wallet`](https://github.com/BofAI/agent-wallet). Fastest path — import a 32-byte hex private key:
 
 ```bash
-cd python/x402-tools
-pip install -e .
-x402-tools --help
+agent-wallet start raw_secret \
+  --wallet-id payer \
+  --private-key 0x<your-32-byte-hex-private-key>
 ```
 
-## Quick start
+> A single key derives both an EVM address and a TRON address. **You don't need a separate wallet per chain.**
+>
+> Other setup paths (encrypted local store, mnemonic, Privy-managed): see [agent-wallet — Getting Started](https://github.com/BofAI/agent-wallet/blob/main/doc/getting-started.md).
+
+## 3. What each command does
+
+| Command | Who you are | What it does |
+|---|---|---|
+| **`x402-cli pay <url>`** | The payer | Hits a URL, and if the server returns `402 Payment Required`, the cli signs + submits the payment + retrieves the response. |
+| **`x402-cli serve`** | The recipient | Starts a local `402` paywall endpoint that only returns content after a valid payment is settled. |
+| **`x402-cli roundtrip`** | Self-test / one-shot transfer | Spins up a `serve` in the background, runs `pay` against it, and tears it down. **The fastest way to make a payment from the command line** — and the easiest way to verify your install end-to-end. |
+
+## 4. Copy-paste: a GasFree transfer on TRON mainnet
+
+Replace `<recipient-TRON-address>` with a real `T...` address and run:
 
 ```bash
-# Start a server that charges 1.25 USDT on TRON Nile
-x402-tools server --pay-to TJWdoJk8KyrfxZ2iDUqz7fwpXaMkNqPehx \
-  --decimal 1.25 --network tron:nile
-
-# In another shell — pay it
-x402-tools client http://127.0.0.1:4020/pay \
-  --max-decimal 1.25 --network tron:nile --token USDT
+x402-cli roundtrip \
+  --pay-to <recipient-TRON-address> \
+  --amount 1 \
+  --token USDT \
+  --network tron:mainnet
 ```
 
-## Design
+Successful output (excerpt):
 
-Unlike the TypeScript version which implements its own HTTP server and facilitator client, the Python CLI directly uses the SDK's `X402Server` and `FacilitatorClient` from [`bankofai-x402`](../../python/x402/):
-
-```python
-from bankofai.x402.server import X402Server
-from bankofai.x402.facilitator import FacilitatorClient
-
-server = X402Server()  # No duplication
-facilitator = FacilitatorClient(base_url)  # SDK provided
+```json
+{
+  "ok": true,
+  "result": {
+    "scheme": "exact_gasfree",
+    "amount": "1000000",
+    "paid": true,
+    "transaction": "<64-hex-tx-hash>"
+  }
+}
 ```
 
-This avoids code duplication and keeps the CLI thin (just argument parsing + output formatting).
+Verify on chain at `https://tronscan.org/#/transaction/<tx-hash>`.
 
-## Environment variables
+> **Why is this GasFree?** USDT on TRON mainnet defaults to the `exact_gasfree` scheme — a GasFree relayer pays the on-chain TRX gas for you, so **your main wallet does not need any TRX**. The USDT is debited from your derived GasFree custodial address (deterministic from your private key).
+>
+> **Before the first transfer**, fund that GasFree custodial address with some USDT. Step-by-step instructions: [docs/manual-test-guide.md → Walkthrough A](docs/manual-test-guide.md#4-walkthrough-a--tron-nile--exact_gasfree).
 
-| Var | Purpose |
+### Templates for other networks
+
+| Network | Replace `--network` with | Notes |
+|---|---|---|
+| TRON mainnet (default GasFree) | `tron:mainnet` | Main wallet does not need TRX. |
+| BSC mainnet (USDT permit) | `eip155:56` | Main wallet **must hold BNB for gas.** |
+| TRON Nile (testnet) | `tron:nile` | [Faucet](https://nileex.io/join/getJoinPage) |
+| BSC Testnet | `eip155:97` | [Faucet](https://testnet.bnbchain.org/faucet-smart) |
+
+To force a specific settlement scheme (instead of the auto-pick), add `--scheme exact_gasfree | exact_permit | exact`.
+
+## 5. Amount units
+
+```
+rawAmount = amount × 10^decimals
+```
+
+| What you mean | Flag to use |
 |---|---|
-| `TRON_PRIVATE_KEY` | TRON wallet key for `--wallet env` |
-| `EVM_PRIVATE_KEY` | EVM wallet key for `--wallet env` |
-| `TRON_GRID_API_KEY` | Optional, forwarded to SDK for TronGrid |
+| "1.25 USDT" (human-readable decimal) | `--amount 1.25` |
+| `1250000` (smallest on-chain unit, USDT has 6 decimals) | `--rawAmount 1250000` |
 
-## Development
+Spending caps on `pay` follow the same split: `--max-amount` / `--max-rawAmount`.
 
-```bash
-cd python/x402-tools
-pip install -e .[dev]
-pytest
-python -m bankofai.x402_tools.cli server --help
-```
+## 6. Common errors
+
+| Error | Resolution |
+|---|---|
+| `Insufficient GasFree balance` | The GasFree custodial address is underfunded. See [top-up steps](docs/manual-test-guide.md#42-top-up-gasfreeaddress). |
+| `cannot import name 'TokenRegistry' …` | You're on `bankofai-x402-cli ≤ 0.1.0b10`. Upgrade: `pip install --pre --upgrade bankofai-x402-cli`. |
+| `resolve_wallet could not find a wallet source` | No wallet configured yet. Go back to step 2. |
+| Stuck on `Master Password:` prompt | A `local_secure` wallet without a persisted runtime password. Re-run with `--save-runtime-secrets`. |
+| `too many pending transfers` | GasFree relayer rate limit. Wait 30–60s and retry. |
+
+Full troubleshooting matrix: [docs/manual-test-guide.md → Troubleshooting](docs/manual-test-guide.md#7-troubleshooting).
+
+## Learn more
+
+- [docs/manual-test-guide.md](docs/manual-test-guide.md) — full hands-on walkthroughs from install to on-chain tx, covering TRON GasFree, TRON permit, and BSC permit.
+- [FEATURES.md](FEATURES.md) — full flag matrix and example output for each command.
+- [agent-wallet docs](https://github.com/BofAI/agent-wallet) — wallet setup options (Privy, mnemonic, encrypted local store).
+- [bankofai-x402 SDK](https://pypi.org/project/bankofai-x402/) — the underlying protocol and its programmatic API, in case you want to integrate directly instead of through the cli.

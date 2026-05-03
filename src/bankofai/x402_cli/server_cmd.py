@@ -1,22 +1,24 @@
 """Server command implementation using Python SDK's X402Server."""
 
-import json
 import logging
-import uuid
 from decimal import Decimal
-from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
-from bankofai.x402 import TokenRegistry
 from bankofai.x402.encoding import decode_payment_payload, encode_payment_payload
 from bankofai.x402.facilitator import FacilitatorClient
 from bankofai.x402.server import ResourceConfig, X402Server
 from bankofai.x402.types import PaymentPayload
 import uvicorn
 
-from bankofai.x402_tools.output import OutputMode, emit
-from bankofai.x402_tools.schemes import is_known_scheme, pick_scheme
+try:
+    from bankofai.x402 import TokenRegistry
+except ImportError:
+    from bankofai.x402 import AssetRegistry as TokenRegistry  # noqa: F401
+
+from bankofai.x402_cli.errors import classify
+from bankofai.x402_cli.output import OutputMode, emit
+from bankofai.x402_cli.schemes import is_known_scheme, pick_scheme
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +34,7 @@ async def _return_payment_required(
     scheme: str,
     token_symbol: str,
     amount_str: str,
-    decimal_str: str,
+    raw_amount_str: str,
     pay_to: str,
 ) -> JSONResponse:
     """Return 402 payment required response."""
@@ -40,7 +42,7 @@ async def _return_payment_required(
         config = ResourceConfig(
             scheme=scheme,
             network=network,
-            price=f"{decimal_str} {token_symbol}",
+            price=f"{amount_str} {token_symbol}",
             pay_to=pay_to,
             valid_for=3600,
             delivery_mode="PAYMENT_ONLY",
@@ -71,7 +73,7 @@ async def _return_payment_required(
 
 async def cmd_server(
     pay_to: str,
-    decimal: str | None,
+    raw_amount: str | None,
     amount: str | None,
     network: str,
     token: str,
@@ -81,7 +83,6 @@ async def cmd_server(
     host: str,
     port: int,
     resource_url: str | None,
-    wallet: str,
     daemon: bool,
     output_mode: OutputMode,
 ) -> None:
@@ -118,22 +119,24 @@ async def cmd_server(
             token_address = token_info.address
 
         # Resolve amount
-        if decimal and amount:
-            raise ValueError("--decimal and --amount are mutually exclusive")
-        if not decimal and not amount:
-            raise ValueError("Either --decimal or --amount must be provided")
+        # rawAmount = amount × 10^decimals
+        #   --amount     human-readable decimal (e.g. 1.25)
+        #   --rawAmount  smallest-unit integer (e.g. 1250000 for 1.25 USDT)
+        if raw_amount and amount:
+            raise ValueError("--rawAmount and --amount are mutually exclusive")
+        if not raw_amount and not amount:
+            raise ValueError("Either --rawAmount or --amount must be provided")
 
-        # Parse amount
-        if decimal:
-            amount_decimal = Decimal(decimal)
+        if amount:
+            amount_decimal = Decimal(amount)
             amount_smallest = int(amount_decimal * (10 ** token_decimals))
-            amount_str = str(amount_smallest)
-            decimal_str = decimal
+            amount_str = str(amount)
+            raw_amount_str = str(amount_smallest)
         else:
-            amount_smallest = int(amount or "0")
-            amount_str = amount or "0"
+            amount_smallest = int(raw_amount or "0")
+            raw_amount_str = raw_amount or "0"
             amount_decimal = Decimal(amount_smallest) / (10 ** token_decimals)
-            decimal_str = str(amount_decimal)
+            amount_str = str(amount_decimal)
 
         # Pick scheme
         if not scheme:
@@ -146,7 +149,9 @@ async def cmd_server(
 
         # Create X402Server and register mechanisms
         server = X402Server()
-        facilitator_url = "https://facilitator.bankofai.io"
+        # Use environment variable or default to main facilitator
+        import os
+        facilitator_url = os.getenv("FACILITATOR_URL", "https://facilitator.bankofai.io")
         facilitator = FacilitatorClient(base_url=facilitator_url)
         server.set_facilitator(facilitator)
 
@@ -178,17 +183,17 @@ async def cmd_server(
         app = FastAPI()
 
         @app.get("/health")
-        async def health() -> dict:
+        async def health() -> dict[str, bool]:
             return {"ok": True}
 
         @app.get("/.well-known/x402")
-        async def well_known() -> dict:
+        async def well_known() -> dict[str, str]:
             return {
                 "network": network,
                 "scheme": scheme,
                 "token": token_symbol,
                 "asset": token_address,
-                "rawAmount": decimal_str,
+                "rawAmount": raw_amount_str,
                 "amount": amount_str,
                 "pay_to": pay_to.strip(),
                 "pay_url": pay_url,
@@ -203,7 +208,7 @@ async def cmd_server(
             if not payment_signature_header:
                 return await _return_payment_required(
                     request, server, network, scheme, token_symbol,
-                    amount_str, decimal_str, pay_to.strip()
+                    amount_str, raw_amount_str, pay_to.strip()
                 )
 
             try:
@@ -220,7 +225,7 @@ async def cmd_server(
                 config = ResourceConfig(
                     scheme=scheme,
                     network=network,
-                    price=f"{decimal_str} {token_symbol}",
+                    price=f"{amount_str} {token_symbol}",
                     pay_to=pay_to.strip(),
                     valid_for=3600,
                     delivery_mode="PAYMENT_ONLY",
@@ -260,7 +265,7 @@ async def cmd_server(
             "network": network,
             "scheme": scheme,
             "token": token_symbol,
-            "decimal": decimal_str,
+            "rawAmount": raw_amount_str,
             "amount": amount_str,
             "pay_to": pay_to.strip(),
         }
@@ -284,10 +289,9 @@ async def cmd_server(
         await server_instance.serve()
 
     except Exception as err:
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Server error: {err}", exc_info=True)
         emit(
             command="server",
-            error={"code": "IO_ERROR", "message": str(err)},
+            error=classify(err).to_dict(),
             mode=output_mode,
         )

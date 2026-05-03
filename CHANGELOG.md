@@ -1,23 +1,204 @@
 # Changelog
 
-All notable changes to `bankofai-x402-tools` are documented here.
+All notable changes to `bankofai-x402-cli` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.1.0-beta.15] — 2026-05-01
+
+### Changed
+
+- **Dependency tree cleaned up**:
+  - Removed direct `web3` and `tronpy` declarations from `pyproject.toml`. Cli source never imports either; they are pulled in through the SDK's own `[evm,tron]` extras now (`bankofai-x402[evm,tron]>=0.5.9,<0.6`). Version ranges for those two libs are now owned by the SDK, not duplicated here.
+  - Net dependency graph and resolved versions are unchanged for end users.
+- **`x402-cli` with no arguments now prints `--help`** instead of an empty error. `-h` is also accepted as an alias for `--help`.
+- **Top-level `--help` includes a "Common flows" section, a one-line first-time-setup hint, and a copy-paste GasFree example**, so users see what to do without leaving the terminal.
+- **`--scheme` help text** lists every supported value (`exact_gasfree` / `exact_permit` / `exact`) with a one-phrase explanation, plus "omit to auto-pick from the (network, token) registry."
+
+### Added
+
+- **Friendly error classifier** (`bankofai.x402_cli.errors`). Common failure modes now ship with a `hint` line in the error envelope:
+  - `WALLET_NOT_CONFIGURED`, `WALLET_CONFIG_CORRUPT` — agent-wallet missing / corrupt
+  - `INSUFFICIENT_GASFREE_BALANCE`, `GASFREE_NOT_ACTIVATED` — GasFree-specific
+  - `INSUFFICIENT_GAS` — EVM/permit path with no native gas token
+  - `RATE_LIMITED`, `DEADLINE_TOO_SOON`, `PERMIT_REVERTED`
+  - `SDK_API_DRIFT` — for the TokenRegistry/AssetRegistry case from b11
+  - Anything unmatched falls back to `IO_ERROR` with a pointer to the troubleshooting doc.
+
+### Fixed
+
+- `specs/smoke-tests.md` example referenced the long-removed `--decimal` flag. Updated to `--amount`.
+
+## [0.1.0-beta.14] — 2026-04-30
+
+### Changed
+
+- **Silence the SDK's "TRON_GRID_API_KEY is not set" startup warning.** The fallback (`https://hptg.bankofai.io`) is the documented default for cli users, so emitting it as `WARNING` on every invocation is noise, not signal. Cli now sets `bankofai.x402.utils.tron_client` to `ERROR` level in `setup_logging()`. Users who *do* want TronGrid still configure `TRON_GRID_API_KEY` exactly as before.
+
+## [0.1.0-beta.13] — 2026-04-30
+
+### Changed
+
+- **README is now English-only** so the PyPI project page renders correctly for non-CN readers. Same structure and content as b12 — the rewrite into a user-facing layout (install → wallet → command roles → copy-paste GasFree transfer → other-network templates → amount units → common errors) is unchanged. Wallet/setup details continue to live in [agent-wallet's getting-started doc](https://github.com/BofAI/agent-wallet/blob/main/doc/getting-started.md), and the multi-scheme hands-on walkthrough is still in [docs/manual-test-guide.md](docs/manual-test-guide.md).
+
+### Verified
+
+Same on-chain test matrix as b12 (no code changes between b12 and b13), so the b12 testnet roundtrips remain authoritative for runtime behavior.
+
+## [0.1.0-beta.12] — 2026-04-30
+
+### Fixed
+
+- **Pin all dependency upper bounds** so a future major-version release of any dep can no longer silently land in user environments and break us, repeating the b10/v2-SDK incident:
+  - `bankofai-x402>=0.5.9,<0.6` (was `>=0.5.9` — the one that bit us)
+  - `bankofai-agent-wallet>=2.4,<3` (was `>=2.4`)
+  - `pydantic>=2.0,<3` (was `>=2.0`)
+  - `fastapi>=0.110,<1.0` (was `>=0.110`)
+  - `uvicorn>=0.27,<1.0` (was `>=0.27`)
+  - `click>=8.1.0,<10` (was `>=8.1.0`)
+  - `httpx`, `web3`, `tronpy` already had caps — kept as-is.
+
+### Changed
+
+- **README rewritten for end users**, not contributors. New flow: install → wallet setup (one command + link out) → what each of the three commands is for → a copy-paste GasFree TRON-mainnet transfer → other-network templates → amount units → common errors. Removed the "Design", "Environment variables", and "Development" sections.
+
+### Verified
+
+Three real-testnet roundtrips against the b12 wheel from a clean venv:
+
+| Network + scheme | tx hash |
+|---|---|
+| `tron:nile` + `exact_permit` | [`887c65b6…`](https://nile.tronscan.org/#/transaction/887c65b63a81009ca7ccc1545575189bf4b604174205187638189b3d61e1cdcb) |
+| `tron:nile` + `exact_gasfree` | [`524d01f8…`](https://nile.tronscan.org/#/transaction/524d01f8ac1451bfd7d0fd835922c7930a4714749efe28471bd6a10dc064375b) |
+| `eip155:97` + `exact_permit` | [`90bd524e…`](https://testnet.bscscan.com/tx/90bd524e7cda5a9587ab7212e3a9efea5e0725fe4d249e53b4a460f89bdd6e4e) |
+
+## [0.1.0-beta.11] — 2026-04-30
+
+### Fixed
+
+- **SDK symbol-rename break**: `bankofai-x402` renamed `TokenRegistry` → `AssetRegistry` mid-stream. Fresh installs were fine (PyPI's `bankofai-x402==0.5.9` still has `TokenRegistry`), but environments with a newer SDK already preinstalled (e.g. anaconda3 base) would `ImportError: cannot import name 'TokenRegistry' from 'bankofai.x402'` on `x402-cli --help`. Each call site now does `try TokenRegistry / except → AssetRegistry as TokenRegistry`, so either symbol resolves. No SDK changes; CLI only.
+
+### Changed
+
+- **Module rename**: `src/bankofai/x402_tools/` → `src/bankofai/x402_cli/`. The package on PyPI, the binary, and the docs were all already `x402-cli`; only the importable Python module still carried the old name. Tracebacks, `python -m bankofai.x402_cli.cli`, and the `roundtrip` subprocess invocation now match.
+- **`--network` / `--token` help text** lists every supported value (`tron:mainnet`, `tron:nile`, `tron:shasta`, `eip155:56`, `eip155:97`; `USDT`, `USDC`, `USDD`, `DHLU`) instead of the previous vague "e.g. tron:nile, eip155:97".
+
+### Added
+
+- [`docs/manual-test-guide.md`](docs/manual-test-guide.md) — end-to-end walkthrough covering install → agent-wallet setup → on-chain test for three combinations: TRON Nile + `exact_gasfree`, TRON Nile + `exact_permit`, BSC Testnet + `exact_permit`. Uses an isolated `AGENT_WALLET_DIR` so users don't have to nuke their existing `~/.agent-wallet/`.
+
+### Removed
+
+- README "Design" section (internal-implementation note, not user-facing). The only useful bit (per-network default scheme rationale) moved into a new compact "Schemes" table.
+- README's multi-step agent-wallet setup walkthrough: now two sentences plus a link out to [agent-wallet — Getting Started](https://github.com/BofAI/agent-wallet/blob/main/doc/getting-started.md).
+
+### Verified
+
+Three real-testnet roundtrips against this exact wheel from PyPI:
+
+| Network + scheme | tx hash |
+|---|---|
+| `tron:nile` + `exact_permit` | [`d99103df…`](https://nile.tronscan.org/#/transaction/d99103df399e50875b02ebce919af73638801b682fe00b97c65671aea92e3fe0) |
+| `tron:nile` + `exact_gasfree` | [`133a0edb…`](https://nile.tronscan.org/#/transaction/133a0edb32f394fdb35797e51224745bec35ddcd081b81d00468aab710aa414f) |
+| `eip155:97` + `exact_permit` | [`ff8bff7e…`](https://testnet.bscscan.com/tx/ff8bff7ee35d63a44fb6c9109af7f1c616a2c2863a11f8f25f477d13ada5552f) |
+
+## [0.1.0-beta.10] — 2026-04-29
+
+### Fixed
+
+- **`pay --token <symbol>` was a dead flag**. The CLI parsed it and threaded it through to `cmd_client`, but the filter dict passed to `select_payment_requirements` only contained `network` and `scheme`, so `--token foo` was silently ignored. The SDK's selector also doesn't take a `token` filter, so the CLI now filters candidates itself by symbol (case-insensitive) via `TokenRegistry.find_by_address` *before* delegating to the SDK. `--token foo` now errors out with `No payment options match --token foo among N offered`.
+
+### Changed (breaking)
+
+- **Removed `--wallet` flag**. All signing now goes through `bankofai-agent-wallet` unconditionally. agent-wallet itself picks between its encrypted local store (`~/.agent-wallet/`) and env vars (`AGENT_WALLET_PRIVATE_KEY` / `TRON_PRIVATE_KEY` / `AGENT_WALLET_MNEMONIC` / `TRON_MNEMONIC`), so no in-tree fallback is needed.
+- Removed `LocalTronWallet` / `LocalEvmWallet` / `read_private_key` from `wallet.py`. The module is now ~10 lines that just call `TronClientSigner.create()` / `EvmClientSigner.create()`.
+
+### Added
+
+- **README "Wallet — agent-wallet" section** explaining the two setup paths (`agent-wallet start` for the encrypted store, or one env var for ad-hoc use).
+- `bankofai-agent-wallet>=2.4` declared as a direct dependency (was previously only transitive via `bankofai-x402`).
+
+### Removed
+
+- Direct deps `eth-account` and `eth-keys` (still pulled in transitively by the SDK; the CLI itself no longer imports them).
+
+### Migration
+
+| beta.9 invocation | beta.10 equivalent |
+|---|---|
+| `x402-cli serve --wallet env ...` | `x402-cli serve ...` (set `TRON_PRIVATE_KEY` first, or run `agent-wallet start`) |
+| `x402-cli pay --wallet agent-wallet ...` | `x402-cli pay ...` |
+
+## [0.1.0-beta.9] — 2026-04-29
+
+### Changed (breaking)
+
+- **Swap `--amount` / `--rawAmount` semantics to match the math** `rawAmount = amount × 10^decimals`. Previous betas had this backwards.
+  - `--amount` is now the **human-readable** decimal (e.g. `1.25`).
+  - `--rawAmount` is now the **smallest-unit integer** (e.g. `1250000` for 1.25 USDT).
+  - Same swap for `--max-amount` (human-readable cap) / `--max-rawAmount` (smallest-unit cap).
+  - JSON output fields `amount` and `rawAmount` follow the new convention.
+- `--max-rawAmount` is now actually wired up (was previously documented but unimplemented).
+
+### Migration from beta.8 and earlier
+
+| Old (wrong) | New (correct) |
+|---|---|
+| `--rawAmount 1.25` | `--amount 1.25` |
+| `--amount 1250000` | `--rawAmount 1250000` |
+| `--max-rawAmount 1.25` | `--max-amount 1.25` |
+| `--max-amount 1250000` | `--max-rawAmount 1250000` |
+
+## [0.1.0-beta.8] — 2026-04-29
+
+### Fixed
+
+- **Add `web3` and `tronpy` to runtime dependencies**: EVM `exact_permit` allowance checks call `web3` (via the SDK's `EvmClientSigner.ensure_allowance`); TRON balance reads call `tronpy`. Without them, fresh installs fail at first chain access.
+
+## [0.1.0-beta.7] — 2026-04-29
+
+### Fixed
+
+- **Pin httpx < 1.0.0**: PyPI was resolving `httpx 1.0.dev3` (a pre-release with breaking API changes — `httpx.AsyncClient` was removed). Cap to the stable 0.x series.
+- **Pin `eth-account` and `eth-keys`** to known-good majors so `eth-account 0.14b1` (currently on PyPI) is not picked up.
+
+## [0.1.0-beta.6] — 2026-04-29
+
+### Fixed
+
+- **Missing runtime dependencies**: add `fastapi`, `uvicorn`, `eth-account`, `eth-keys` to `pyproject.toml`. beta.5 imports these but did not declare them, breaking fresh installs.
+- **Documentation**: replace residual `x402-tools` references in `README.md`, `FEATURES.md`, `specs/README.md` with `x402-cli`. Replace deprecated `--max-decimal` with `--max-rawAmount`.
+
+## [0.1.0-beta.5] — 2026-04-29
+
+### Fixed
+
+- **TRON `exact_gasfree`**: properly initialize `ExactGasFreeClientMechanism` with required `clients` argument (`GasFreeAPIClient` instances per network).
+- **TRON address format**: convert EVM hex (derived from private key) to TRON Base58 before passing to GasFree API, which rejects 0x-prefixed addresses.
+- **EIP-712 / TIP-712 signing**: introduce `LocalTronWallet` and `LocalEvmWallet` classes implementing `sign_typed_data(typed_data)` so that env-based wallets can sign payment permits.
+- **`paymentPermitContext`**: forward `extensions` from the 402 response to `create_payment_payload`, fixing `PermitValidationError("missing_context")` for `exact_permit` schemes.
+- **HTTP timeout**: bump client timeout from 10s to 60s to accommodate facilitator settlement latency on TRON Nile and BSC.
+- **Error logging**: include traceback and `repr(err)` fallback when the exception message is empty.
+
+### Verified on-chain
+
+- **TRON Nile** (`exact_gasfree`): roundtrip + serve/pay both succeed end-to-end via `https://facilitator.bankofai.io/nile`.
+- **BSC Testnet** (`exact_permit`): roundtrip succeeds end-to-end via the main facilitator.
 
 ## [0.1.0-beta.3] — 2026-04-29
 
 ### Added
 
-First public beta of the Python x402-tools CLI.
+First public beta of the Python x402-cli CLI.
 
-- **Binary**: `x402-tools`, published as `bankofai-x402-tools`.
-- **`x402-tools server`** — starts a local x402 payment server using the SDK's `X402Server`.
+- **Binary**: `x402-cli`, published as `bankofai-x402-cli`.
+- **`x402-cli serve`** — starts a local x402 payment server using the SDK's `X402Server`.
   - Endpoints: `GET /health`, `GET /.well-known/x402`, `GET | POST /pay`.
-  - Supports `--decimal | --amount`, `--network`, `--token`, `--scheme`, `--host`, `--port`.
+  - Supports `--rawAmount | --amount`, `--network`, `--token`, `--scheme`, `--host`, `--port`.
   - Human output and `--json` envelope report payment terms.
-- **`x402-tools client <url>`** — pays an x402-protected URL.
+- **`x402-cli pay <url>`** — pays an x402-protected URL.
   - Probes once; if not 402, prints summary and exits.
-  - On 402, parses requirements, filters against `--max-decimal | --max-amount | --network | --token | --scheme`.
+  - On 402, parses requirements, filters against `--max-rawAmount | --max-amount | --network | --token | --scheme`.
   - Signs and retries with payment payload.
 - **Wallet selector** (D1) — `--wallet agent-wallet` (default) or `--wallet env`.
 - **Auto-scheme picker** — maps (network, token) to recommended scheme.

@@ -1,0 +1,432 @@
+#!/usr/bin/env python3
+"""x402-cli — serve or pay x402 endpoints."""
+
+import asyncio
+import logging
+import subprocess
+import time
+
+import click
+
+from bankofai.x402_cli import __version__
+from bankofai.x402_cli.output import OutputMode
+from bankofai.x402_cli.server_cmd import cmd_server
+from bankofai.x402_cli.client_cmd import cmd_client
+
+
+def setup_logging() -> None:
+    """Configure logging for CLI."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="[%(name)s] %(levelname)s: %(message)s",
+    )
+    # The SDK emits a startup WARNING when TRON_GRID_API_KEY is unset,
+    # but falling back to the BankofAI-hosted gateway is the intended
+    # default for cli users — not a real warning. Silence it.
+    logging.getLogger("bankofai.x402.utils.tron_client").setLevel(logging.ERROR)
+
+
+@click.group(
+    no_args_is_help=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
+@click.version_option(__version__, prog_name="x402-cli")
+def cli() -> None:
+    """BankofAI x402 CLI — pay x402-protected URLs, run a paywall, or test the full flow.
+
+    \b
+    Common flows:
+      x402-cli pay <url>          Pay an x402-protected URL.
+      x402-cli serve --pay-to ... Run a 402 endpoint that charges to your address.
+      x402-cli roundtrip ...      One-shot transfer: spin up serve → pay → tear down.
+
+    \b
+    First-time setup (one command):
+      agent-wallet start raw_secret --wallet-id payer --private-key 0x...
+
+    \b
+    Example — GasFree USDT transfer on TRON mainnet:
+      x402-cli roundtrip --pay-to T... --amount 1 --network tron:mainnet --token USDT
+
+    See https://github.com/BofAI/x402-cli for the full guide.
+    """
+    setup_logging()
+
+
+@cli.command()
+@click.option(
+    "--pay-to",
+    required=True,
+    help="Recipient wallet address",
+)
+@click.option(
+    "--amount",
+    type=str,
+    help="Human-readable amount, e.g. 1.25 (mutually exclusive with --rawAmount)",
+)
+@click.option(
+    "--rawAmount",
+    type=str,
+    help="Smallest-unit amount, e.g. 1250000 for 1.25 USDT (mutually exclusive with --amount)",
+)
+@click.option(
+    "--network",
+    required=True,
+    help=(
+        "Payment network (CAIP-2 ID). Supported: "
+        "tron:mainnet, tron:nile, tron:shasta, "
+        "eip155:56 (BSC), eip155:97 (BSC Testnet)."
+    ),
+)
+@click.option(
+    "--token",
+    default="USDT",
+    help=(
+        "Token symbol from the registry. "
+        "Supported: USDT, USDC, USDD, DHLU. Default: USDT."
+    ),
+)
+@click.option(
+    "--asset",
+    type=str,
+    help="Explicit token address (out of registry)",
+)
+@click.option(
+    "--decimals",
+    type=int,
+    help="Token decimals when --asset is given",
+)
+@click.option(
+    "--scheme",
+    type=str,
+    help=(
+        "x402 settlement scheme. Supported: "
+        "exact_gasfree (TRON only, gasless), "
+        "exact_permit (EIP-2612/TIP-2612 permit, payer pays gas), "
+        "exact (ERC-3009 transferWithAuthorization). "
+        "Omit to let cli auto-pick from the (network, token) registry."
+    ),
+)
+@click.option(
+    "--host",
+    default="127.0.0.1",
+    help="Bind host (default: 127.0.0.1)",
+)
+@click.option(
+    "--port",
+    type=int,
+    default=4020,
+    help="Bind port (default: 4020)",
+)
+@click.option(
+    "--resource-url",
+    type=str,
+    help="Resource URL advertised in x402 requirements",
+)
+@click.option(
+    "--daemon",
+    is_flag=True,
+    help="Run server in background and print pid",
+)
+@click.option(
+    "--json",
+    "output_json",
+    is_flag=True,
+    help="Print server info as JSON",
+)
+def serve(
+    pay_to: str,
+    rawamount: str | None,
+    amount: str | None,
+    network: str,
+    token: str,
+    asset: str | None,
+    decimals: int | None,
+    scheme: str | None,
+    host: str,
+    port: int,
+    resource_url: str | None,
+    daemon: bool,
+    output_json: bool,
+) -> None:
+    """Start a local x402 payment server (foreground or daemon mode)."""
+    output_mode: OutputMode = "json" if output_json else "human"
+
+    async def run() -> None:
+        await cmd_server(
+            pay_to=pay_to,
+            raw_amount=rawamount,
+            amount=amount,
+            network=network,
+            token=token,
+            asset=asset,
+            decimals=decimals,
+            scheme=scheme,
+            host=host,
+            port=port,
+            resource_url=resource_url,
+            daemon=daemon,
+            output_mode=output_mode,
+        )
+
+    asyncio.run(run())
+
+
+@cli.command()
+@click.argument("url")
+@click.option(
+    "--max-amount",
+    type=str,
+    help="Maximum human-readable amount allowed, e.g. 1.25",
+)
+@click.option(
+    "--max-rawAmount",
+    type=str,
+    help="Maximum smallest-unit amount allowed, e.g. 1250000",
+)
+@click.option(
+    "--network",
+    type=str,
+    help=(
+        "Require a specific network (CAIP-2 ID). Supported: "
+        "tron:mainnet, tron:nile, tron:shasta, "
+        "eip155:56 (BSC), eip155:97 (BSC Testnet). "
+        "Omit to accept any network the server advertises."
+    ),
+)
+@click.option(
+    "--token",
+    type=str,
+    help=(
+        "Require a specific token symbol. "
+        "Supported: USDT, USDC, USDD, DHLU. "
+        "Omit to accept any token the server advertises."
+    ),
+)
+@click.option(
+    "--scheme",
+    type=str,
+    help="Require a specific x402 scheme",
+)
+@click.option(
+    "--method",
+    default="GET",
+    help="HTTP method (default: GET)",
+)
+@click.option(
+    "--header",
+    multiple=True,
+    help="HTTP header; can be repeated",
+)
+@click.option(
+    "--body",
+    type=str,
+    help="Request body string or JSON",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Read payment requirements but do not sign or pay",
+)
+@click.option(
+    "--json",
+    "output_json",
+    is_flag=True,
+    help="Print machine-readable JSON",
+)
+def pay(
+    url: str,
+    max_rawamount: str | None,
+    max_amount: str | None,
+    network: str | None,
+    token: str | None,
+    scheme: str | None,
+    method: str,
+    header: tuple[str, ...],
+    body: str | None,
+    dry_run: bool,
+    output_json: bool,
+) -> None:
+    """Pay an x402-protected URL when the server returns 402 Payment Required."""
+    output_mode: OutputMode = "json" if output_json else "human"
+
+    async def run() -> None:
+        await cmd_client(
+            url=url,
+            max_raw_amount=max_rawamount,
+            max_amount=max_amount,
+            network=network,
+            token=token,
+            scheme=scheme,
+            method=method,
+            headers=header,
+            body=body,
+            dry_run=dry_run,
+            output_mode=output_mode,
+        )
+
+    asyncio.run(run())
+
+
+@cli.command()
+@click.option(
+    "--pay-to",
+    required=True,
+    help="Recipient wallet address",
+)
+@click.option(
+    "--amount",
+    type=str,
+    help="Human-readable amount, e.g. 1.25 (mutually exclusive with --rawAmount)",
+)
+@click.option(
+    "--rawAmount",
+    type=str,
+    help="Smallest-unit amount, e.g. 1250000 for 1.25 USDT (mutually exclusive with --amount)",
+)
+@click.option(
+    "--network",
+    required=True,
+    help=(
+        "Payment network (CAIP-2 ID). Supported: "
+        "tron:mainnet, tron:nile, tron:shasta, "
+        "eip155:56 (BSC), eip155:97 (BSC Testnet)."
+    ),
+)
+@click.option(
+    "--token",
+    default="USDT",
+    help=(
+        "Token symbol from the registry. "
+        "Supported: USDT, USDC, USDD, DHLU. Default: USDT."
+    ),
+)
+@click.option(
+    "--asset",
+    type=str,
+    help="Explicit token address (out of registry)",
+)
+@click.option(
+    "--decimals",
+    type=int,
+    help="Token decimals when --asset is given",
+)
+@click.option(
+    "--scheme",
+    type=str,
+    help=(
+        "x402 settlement scheme. Supported: "
+        "exact_gasfree (TRON only, gasless), "
+        "exact_permit (EIP-2612/TIP-2612 permit, payer pays gas), "
+        "exact (ERC-3009 transferWithAuthorization). "
+        "Omit to let cli auto-pick from the (network, token) registry."
+    ),
+)
+@click.option(
+    "--host",
+    default="127.0.0.1",
+    help="Bind host (default: 127.0.0.1)",
+)
+@click.option(
+    "--port",
+    type=int,
+    default=4020,
+    help="Bind port (default: 4020)",
+)
+@click.option(
+    "--resource-url",
+    type=str,
+    help="Resource URL advertised in x402 requirements",
+)
+@click.option(
+    "--json",
+    "output_json",
+    is_flag=True,
+    help="Print result as JSON",
+)
+def roundtrip(
+    pay_to: str,
+    rawamount: str | None,
+    amount: str | None,
+    network: str,
+    token: str,
+    asset: str | None,
+    decimals: int | None,
+    scheme: str | None,
+    host: str,
+    port: int,
+    resource_url: str | None,
+    output_json: bool,
+) -> None:
+    """One-shot roundtrip: start server, pay it, shut down (for testing)."""
+    output_mode: OutputMode = "json" if output_json else "human"
+
+    async def run() -> None:
+        import sys
+
+        # Start daemon server
+        proc = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "bankofai.x402_cli.cli",
+                "serve",
+                "--pay-to", pay_to,
+                "--network", network,
+                "--token", token,
+                "--host", host,
+                "--port", str(port),
+            ] + (
+                ["--rawAmount", rawamount] if rawamount else []
+            ) + (
+                ["--amount", amount] if amount else []
+            ) + (
+                ["--asset", asset] if asset else []
+            ) + (
+                ["--decimals", str(decimals)] if decimals else []
+            ) + (
+                ["--scheme", scheme] if scheme else []
+            ) + (
+                ["--resource-url", resource_url] if resource_url else []
+            ),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        # Wait for server to start
+        time.sleep(1)
+
+        try:
+            # Pay the server
+            await cmd_client(
+                url=f"http://{host}:{port}/pay",
+                max_raw_amount=None,
+                max_amount=None,
+                network=network,
+                token=token,
+                scheme=scheme,
+                method="GET",
+                headers=(),
+                body=None,
+                dry_run=False,
+                output_mode=output_mode,
+            )
+        finally:
+            # Kill the server
+            if proc.poll() is None:
+                proc.terminate()
+                try:
+                    proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+
+    asyncio.run(run())
+
+
+def main() -> None:
+    """CLI entry point."""
+    cli()
+
+
+if __name__ == "__main__":
+    main()
