@@ -4,6 +4,12 @@ All notable changes to `bankofai-x402-cli` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.17] — 2026-05-07
+
+### Added
+
+- **Friendly error for "TRON account does not exist"** ([errors.py](src/bankofai/x402_cli/errors.py)). When a fresh TRON address tries to sign its first contract call, full nodes reject with `Contract validate error : account [T...] does not exist`. This is a TRON activation rule (every address must have received any inflow once before it can be the owner of a contract call), not a cli/SDK bug. The cli now classifies this error as `TRON_ACCOUNT_NOT_ACTIVATED` and prints a one-line hint: send ~1 TRX from any other wallet/exchange to bootstrap the address, or use `--scheme exact_gasfree` to skip the activation requirement entirely.
+
 ## [0.1.0-beta.16] — 2026-05-07
 
 ### Fixed

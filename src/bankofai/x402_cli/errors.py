@@ -78,6 +78,26 @@ def classify(err: BaseException) -> FriendlyError:
             ),
         )
 
+    # --- TRON: account never activated on this network ---
+    # Triggered the first time a fresh TRON address tries to be the owner of a
+    # contract call. TRON nodes refuse "account [T...] does not exist" until
+    # the address has received any inflow (TRX / TRC10 / TRC20). This is a
+    # one-time bootstrap, not a cli/SDK bug.
+    if "does not exist" in lower and "account [t" in lower:
+        return FriendlyError(
+            code="TRON_ACCOUNT_NOT_ACTIVATED",
+            message=msg,
+            hint=(
+                "TRON requires an address to be activated (have received any "
+                "inflow at least once) before it can sign contract calls. "
+                "Send ~1 TRX to this address from any other wallet or "
+                "exchange withdrawal — it's a one-time bootstrap. "
+                "Alternatively use --scheme exact_gasfree (default for USDT "
+                "on TRON), which routes through the GasFree relayer and "
+                "needs no main-wallet activation."
+            ),
+        )
+
     # --- on-chain gas shortfall (EVM permit path) ---
     if "insufficient funds for gas" in lower:
         return FriendlyError(
