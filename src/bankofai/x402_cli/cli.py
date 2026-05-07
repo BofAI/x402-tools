@@ -8,10 +8,14 @@ import time
 
 import click
 
-from bankofai.x402_cli import __version__
+from bankofai.x402_cli import __version__, _tron_patch
 from bankofai.x402_cli.output import OutputMode
 from bankofai.x402_cli.server_cmd import cmd_server
 from bankofai.x402_cli.client_cmd import cmd_client
+
+# Install the TRON raw_data_hex compat patch before any signing happens.
+# See _tron_patch.py for the rationale.
+_tron_patch.install()
 
 
 def setup_logging() -> None:

@@ -4,6 +4,20 @@ All notable changes to `bankofai-x402-cli` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.16] — 2026-05-07
+
+### Fixed
+
+- **TRON `exact_permit` first-time approval no longer fails on `privy` wallets** ([_tron_patch.py](src/bankofai/x402_cli/_tron_patch.py)). The SDK's `_build_unsigned_tx_payload` ships the unsigned TRON tx with `raw_data_hex=None` because tronpy 0.4–0.6 don't expose `raw_data_hex` on the `Transaction` object. The local `raw_secret` / `local_secure` adapters tolerated this (they sign `txID` directly), but the new `privy` adapter in `bankofai-agent-wallet` 2.4 strictly requires a non-empty `raw_data_hex` for compliance review and rejected the payload with `Payload must include raw_data_hex for TRON signing`. The cli now monkey-patches `TronClientSigner._build_unsigned_tx_payload` at import time to fill in the missing `raw_data_hex` using tronpy's own protobuf serialization helper (the same code path tronpy itself uses for offline txid calculation). Verified bit-equal against `txn.txid`. Idempotent and forward-compatible — when the SDK starts emitting `raw_data_hex` natively, the patch becomes a no-op.
+
+### Added
+
+- `protobuf>=4.21,<7` direct dependency, required by `tronpy.proto` for the patch above.
+
+### Notes
+
+- This unblocks `--scheme exact_permit` on TRON for any wallet backend that doesn't accept `None` payloads (privy, future hosted signers). raw_secret / local_secure / mnemonic flows already worked and remain unchanged.
+
 ## [0.1.0-beta.15] — 2026-05-01
 
 ### Changed
