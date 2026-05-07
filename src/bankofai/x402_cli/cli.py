@@ -153,7 +153,12 @@ def serve(
     daemon: bool,
     output_json: bool,
 ) -> None:
-    """Start a local x402 payment server (foreground or daemon mode)."""
+    """Run a local x402 paywall endpoint.
+
+    Advertises payment terms (network / token / amount / scheme) and only
+    returns content after a valid signed payload is verified and settled.
+    Foreground by default; `--daemon` runs in the background.
+    """
     output_mode: OutputMode = "json" if output_json else "human"
 
     async def run() -> None:
@@ -210,7 +215,13 @@ def serve(
 @click.option(
     "--scheme",
     type=str,
-    help="Require a specific x402 scheme",
+    help=(
+        "Require a specific x402 settlement scheme. Supported: "
+        "exact_gasfree (TRON only, gasless), "
+        "exact_permit (EIP-2612/TIP-2612 permit, payer pays gas), "
+        "exact (ERC-3009 transferWithAuthorization). "
+        "Omit to accept any scheme the server advertises."
+    ),
 )
 @click.option(
     "--method",
@@ -251,7 +262,13 @@ def pay(
     dry_run: bool,
     output_json: bool,
 ) -> None:
-    """Pay an x402-protected URL when the server returns 402 Payment Required."""
+    """Pay an x402-protected URL.
+
+    Hits URL; if the server returns 402 Payment Required, signs the
+    advertised payload with the active wallet and retries. Returns the
+    server's response on success, or a structured error with hint on
+    failure.
+    """
     output_mode: OutputMode = "json" if output_json else "human"
 
     async def run() -> None:
@@ -362,7 +379,12 @@ def roundtrip(
     resource_url: str | None,
     output_json: bool,
 ) -> None:
-    """One-shot roundtrip: start server, pay it, shut down (for testing)."""
+    """One-shot transfer: serve → pay → tear down.
+
+    Spins up `serve` in a background subprocess, runs `pay` against it
+    from the same process, then kills the subprocess. The fastest way to
+    make a single payment from the command line.
+    """
     output_mode: OutputMode = "json" if output_json else "human"
 
     async def run() -> None:
