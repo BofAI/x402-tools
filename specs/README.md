@@ -74,22 +74,26 @@ If you're debugging or adding features:
 
 ## Updating These Specs
 
-When you change behavior:
+These docs are **architecture references**, not living contracts. The day-to-day record of what changed (and why) lives in:
 
-1. **Update the spec first** (before coding)
-2. **Implement the change** (in src/)
-3. **Update smoke tests** (if behavior changed)
-4. **Verify tests pass** (smoke tests should still pass)
+1. **[`CHANGELOG.md`](../CHANGELOG.md)** — every release's behavior changes, with rationale. The canonical "what's the current behavior" source.
+2. **Source + tests** — the implementation truth. `pytest -q tests/` is the regression gate.
+3. **These specs** — refreshed when the *architecture* shifts (a new endpoint, a new mechanism, a new compat layer like `_tron_patch.py`). For day-to-day flag tweaks or error-message polish, the CHANGELOG entry is enough.
 
-Example:
-```
-User asks: "Add --max-rawAmount validation to pay"
+In practice this project is **code-first**: behavior lands in a release, the CHANGELOG records it, and these specs get a sweep at major-version boundaries (e.g. `0.1.0` consolidated b5..b17). If you find a discrepancy between a spec file and the running cli, **the cli is canonical** — file an issue or open a PR fixing the spec.
 
-1. Update specs/client.md → add --max-rawAmount to parameters
-2. Update src/bankofai/x402_cli/client_cmd.py → implement validation
-3. Update specs/smoke-tests.md → add test case
-4. Run: bash .claude/smoke-test.sh → verify
-```
+### When to actually edit a spec file
+
+- Adding a new HTTP endpoint to `serve` → `server.md` "Endpoints" section
+- Adding a new settlement scheme → both `server.md` and `client.md` mechanism tables
+- Adding a new `errors.py` classification rule → `client.md` "Error Codes" table
+- Adding a new compat layer like `_tron_patch.py` → `server.md` (or `client.md`, wherever the layer lives)
+
+### When NOT to bother
+
+- Renaming a flag, tweaking help text, adding examples → CHANGELOG only
+- Internal refactors with no behavior change → no doc update needed
+- One-off bug fixes → CHANGELOG only
 
 ## Protocol Reference
 

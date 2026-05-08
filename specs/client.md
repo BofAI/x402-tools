@@ -92,11 +92,18 @@ Extract .accepts[] (PaymentRequirements list)
 Based on `accepts[]`:
 
 ```python
+# Pre-build GasFree API clients for each TRON network in accepts[].
+# ExactGasFreeClientMechanism requires a `clients={network: GasFreeAPIClient(...)}`
+# kwarg, not just the signer.
+gasfree_clients = {
+    network: GasFreeAPIClient(_get_gasfree_base_url(network))
+    for network in tron_networks_with_gasfree
+}
+
 for requirement in accepts:
     scheme = requirement.scheme
     network = requirement.network
-    
-    # Register appropriate mechanism
+
     if scheme == "exact":
         client.register(network, ExactEvmClientMechanism(signer))
     elif scheme == "exact_permit":
@@ -105,18 +112,23 @@ for requirement in accepts:
         elif network.startswith("tron:"):
             client.register(network, ExactPermitTronClientMechanism(signer))
     elif scheme == "exact_gasfree":
-        client.register(network, ExactGasFreeClientMechanism(signer))
+        # NOTE the `clients=` kwarg — required since SDK 0.5.x.
+        client.register(network, ExactGasFreeClientMechanism(signer, clients=gasfree_clients))
 ```
 
 ### 4. Signer Resolution
+
+The cli has no in-tree wallet plumbing. Both `TronClientSigner.create()` and `EvmClientSigner.create()` are called directly; `bankofai-agent-wallet` resolves the actual wallet source internally (encrypted local store at `~/.agent-wallet/`, falling back to env vars `AGENT_WALLET_PRIVATE_KEY` / `TRON_PRIVATE_KEY` / mnemonic forms).
 
 ```
 Determine network from accepts[]
   ↓
 Network prefix?
-  ├─ "tron:" → TronClientSigner (from agent-wallet or TRON_PRIVATE_KEY)
-  └─ "eip155:" → EvmClientSigner (resolved by bankofai-agent-wallet)
+  ├─ "tron:" → await TronClientSigner.create()    (agent-wallet picks the source)
+  └─ "eip155:" → await EvmClientSigner.create()   (agent-wallet picks the source)
 ```
+
+There is no `--wallet` flag and no in-tree env fallback in the cli itself.
 
 ### 5. Select Requirements
 
@@ -161,14 +173,23 @@ Response Status?
 
 ## Error Codes
 
-| Code | Scenario |
-|------|----------|
-| `IO_ERROR` | Network issues, URL unreachable |
-| `VALIDATION_ERROR` | Invalid URL, conflicting flags |
-| `PARSE_ERROR` | Invalid 402 response format |
-| `WALLET_ERROR` | Signer unavailable or invalid |
-| `SIGNATURE_ERROR` | Payment signing failed |
-| `SETTLEMENT_ERROR` | Server rejected signature/payment |
+Errors are surfaced through `bankofai.x402_cli.errors.classify()`, which maps the underlying exception to a `(code, message, hint)` triplet. The cli emits the structured form in `--json` mode and prints `code + hint` lines in human mode.
+
+| Code | When you see it | Hint summary |
+|---|---|---|
+| `WALLET_NOT_CONFIGURED` | agent-wallet has no source (no encrypted store, no env var) | Run `agent-wallet start raw_secret --wallet-id payer --private-key 0x...` once |
+| `WALLET_CONFIG_CORRUPT` | `~/.agent-wallet/wallets_config.json` is partial/broken | `agent-wallet reset -y` then re-add |
+| `INSUFFICIENT_GASFREE_BALANCE` | gasFreeAddress balance < amount + transferFee + (activateFee if first time) | Top up the gasFreeAddress, not the main wallet |
+| `GASFREE_NOT_ACTIVATED` | First-time GasFree settlement | Make sure the GasFree balance covers `activateFee` (~2 USDT); the first settlement auto-activates |
+| `TRON_ACCOUNT_NOT_ACTIVATED` | Fresh TRON address as owner of a contract call (TRON node refuses `account [T...] does not exist`) | Send any TRX inflow once to bootstrap the address, or use `--scheme exact_gasfree` |
+| `INSUFFICIENT_GAS` | EVM/TRON permit path with no native gas (BNB / TRX) | Fund payer with native token, or switch to `exact_gasfree` on TRON |
+| `RATE_LIMITED` | 429 / "too many pending" from facilitator or GasFree relayer | Wait 30–60s and retry |
+| `DEADLINE_TOO_SOON` | Clock skew between local machine and chain/facilitator | NTP-sync system clock |
+| `PERMIT_REVERTED` | On-chain `permit()` rejected the signature | Use `exact_gasfree` on TRON, or verify token contract supports EIP-2612 |
+| `SDK_API_DRIFT` | SDK exposes a different symbol set than cli expects (e.g. TokenRegistry → AssetRegistry rename) | Upgrade cli: `pip install --upgrade bankofai-x402-cli` |
+| `IO_ERROR` (fallback) | Anything unmatched | Pointer to `docs/manual-test-guide.md` troubleshooting table |
+
+The classifier rules live in [`src/bankofai/x402_cli/errors.py`](../src/bankofai/x402_cli/errors.py); add a new rule there + a regression test in [`tests/test_errors.py`](../tests/test_errors.py) when a new error pattern emerges from real users.
 
 ## Output Examples
 
@@ -219,8 +240,9 @@ Response Status?
   "ok": false,
   "command": "client",
   "error": {
-    "code": "IO_ERROR",
-    "message": "resolve_wallet could not find a wallet source in config or env"
+    "code": "WALLET_NOT_CONFIGURED",
+    "message": "resolve_wallet could not find a wallet source in config or env",
+    "hint": "Run 'agent-wallet start raw_secret --wallet-id payer --private-key 0x...' once, or set TRON_PRIVATE_KEY / AGENT_WALLET_PRIVATE_KEY in your shell."
   }
 }
 ```

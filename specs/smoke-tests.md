@@ -2,7 +2,16 @@
 
 **Purpose**: Validate core x402-cli functionality without real blockchain interaction.
 
-**Status**: ✅ Implemented and passing (2026-04-29)
+**Status**: ✅ Implemented and passing (last verified 2026-05-08 against 0.1.0).
+
+There are two complementary layers:
+
+| Layer | Location | Run command | Coverage |
+|---|---|---|---|
+| Pure unit tests | [`tests/`](../tests/) | `pytest -q tests/` | 30 cases across 4 files: `test_schemes.py` (7), `test_output.py` (4), `test_tron_patch.py` (6 — byte-equality of `_tron_patch` vs tronpy's own offline txid calc), `test_errors.py` (13 — all 10 friendly classifier rules + IO_ERROR fallback + dict-shape stability). No network, no chain. |
+| Server-process smoke | [`.claude/smoke-test.sh`](../.claude/smoke-test.sh) | `bash .claude/smoke-test.sh` | Spins up `x402-cli serve` on a local port, hits `/health`, `/.well-known/x402`, `/pay`, asserts on the responses. No signing, no facilitator round-trip. |
+
+The unit-test layer is run on every CI build (Python 3.11 + 3.12, GitHub Actions). The cases below describe what the server-process smoke asserts.
 
 ## Test Suite
 
@@ -32,7 +41,7 @@ x402-cli serve \
 
 ### [2] /health Endpoint
 
-**Objective**: Verify health check endpoint
+**Objective**: Verify the liveness probe is reachable before any chain / facilitator handshakes.
 
 **Request**:
 ```
@@ -41,19 +50,14 @@ GET http://127.0.0.1:9999/health
 
 **Expected Response**:
 ```json
-{
-  "ok": true,
-  "command": "server",
-  "network": "eip155:97",
-  "scheme": "exact_permit",
-  "result": { "pid": null, "pay_url": "...", ... }
-}
+{ "ok": true }
 ```
+
+That's the entire body. Server config (network, scheme, asset, etc.) lives at `/.well-known/x402`, not here — `/health` is intentionally tiny so `roundtrip`'s `_wait_for_server_ready` poll can succeed immediately after uvicorn binds the port.
 
 **Assertions**:
 - HTTP status: 200
-- Response contains `"ok": true`
-- Includes server metadata (network, scheme, token)
+- Body is exactly `{"ok": true}`
 
 **Result**: ✅ PASS
 
@@ -224,7 +228,7 @@ x402-cli Global Smoke Test
 | Full payment settlement | Requires mock facilitator | E2E tests |
 | Client command | Requires live server interaction | Integration tests |
 | Testnet deployment | Requires funded wallet + RPC | Manual testing |
-| `--daemon` mode | Not implemented | v0.1.1+ |
+| `--daemon` mode | The flag exists on `serve` and `roundtrip` but `cmd_server` ignores it (no fork / detach yet). Real daemonization is deferred to a future release. | v0.2.x |
 | Transaction verification | Requires on-chain RPC | E2E tests |
 
 ## Continuous Integration

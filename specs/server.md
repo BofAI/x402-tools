@@ -48,32 +48,22 @@ Endpoints:
 | `--host` | no | `127.0.0.1` | Bind host |
 | `--port` | no | `4020` | Bind port |
 | `--resource-url` | no | `/pay` | Resource URL in config |
-| `--daemon` | no | false | Run in background (not implemented) |
+| `--daemon` | no | false | Reserved flag — currently a no-op (the server still runs in the foreground). Real daemonization is planned for a later release. |
 | `--json` | no | false | JSON output |
 
 ## Endpoints
 
 ### GET /health
 
-**Purpose**: Health check
+**Purpose**: Liveness probe — used by `roundtrip`'s `_wait_for_server_ready` and by external monitoring.
 
-**Response**:
+**Response**: HTTP 200
+
 ```json
-{
-  "ok": true,
-  "command": "server",
-  "network": "eip155:97",
-  "scheme": "exact_permit",
-  "result": {
-    "pid": null,
-    "pay_url": "http://127.0.0.1:4020/pay",
-    "token": "USDT",
-    "amount": "0.0001",
-    "rawAmount": "100000000000000",
-    "pay_to": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
-  }
-}
+{ "ok": true }
 ```
+
+That's the entire body. Server configuration (pay_to, amount, asset, etc.) lives at `/.well-known/x402`, not here — `/health` is intentionally tiny so it can return before any chain / facilitator handshakes.
 
 ### GET /.well-known/x402
 
@@ -168,6 +158,14 @@ PAYMENT-SIGNATURE: [Base64-encoded PaymentPayload]
    - Call `X402Server.build_payment_requirements()`
    - Call `X402Server.settle_payment(payload, requirements)`
    - Return settlement result or error
+
+## Compat shim — `_tron_patch.py`
+
+CLI installs a runtime monkey-patch on `TronClientSigner._build_unsigned_tx_payload` at startup. The SDK ships TRON unsigned-tx payloads with `raw_data_hex=None` because no released `tronpy` (0.4–0.6) exposes that field on the `Transaction` object. The local `raw_secret` / `local_secure` adapters tolerate it (they sign `txID` directly), but the `privy` adapter strictly requires non-empty `raw_data_hex` and refuses the payload.
+
+The patch fills the field by calling tronpy's own protobuf helper (`tronpy.proto._raw_data_to_protobuf` + `tron_pb2.Transaction(raw_data=...).SerializeToString()`) — the same code path tronpy uses for offline txid calculation. SHA-256 of the result equals `txn.txid`, so the bytes are byte-for-byte correct.
+
+The shim is idempotent and forward-compatible: when the SDK starts emitting `raw_data_hex` natively, the patched function short-circuits because `payload.get("raw_data_hex")` is already truthy. At that point the file can be deleted along with the `protobuf` direct dependency.
 
 ## Mechanism Registration
 
