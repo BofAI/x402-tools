@@ -209,7 +209,12 @@ Notice the **payer's TRX balance is unchanged** — the relayer covered gas. USD
 
 ## 5. Walkthrough B — TRON Nile + `exact_permit` (DEFAULT)
 
-This is the **default path** for TRON USDT — `--scheme exact_permit` is what the cli auto-picks if you don't override it. EIP-712-style `permit` + `transferFrom`, executed on the payer's main wallet. Payer **must** hold TRX for gas.
+This is the **default path** for TRON USDT — `--scheme exact_permit` is what the cli auto-picks if you don't override it. The flow:
+
+1. Your wallet signs a permit **off-chain** (no gas, no broadcast).
+2. The facilitator submits `permit + transferFrom` on chain on your behalf — **the facilitator pays the gas**, not you.
+
+**One-time exception**: the very first payment from a fresh wallet to a given token contract triggers an extra `approve` transaction that you sign and broadcast yourself (so the PaymentPermit contract is allowed to move tokens on your behalf in future settlements). On Nile that costs ~6 TRX of energy. After that, all subsequent payments are gas-free from your wallet's perspective.
 
 > Nile USDT (`TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf`) implements TIP-2612 correctly, so this path works on Nile. **TRON USDT defaults to `exact_permit` cli-wide** (mainnet too) — `exact_gasfree` is the opt-in fallback for payers without TRX.
 
@@ -229,7 +234,7 @@ print(f"TRX:  {client.get_account(PAYER).get('balance', 0) / 10**6}")
 PY
 ```
 
-Need: USDT > `amount`, TRX ≳ 10 (one `permit + transferFrom` typically burns ~6 TRX of energy on Nile).
+Need: USDT > `amount`. TRX is **only required if this is the wallet's first payment for this token** — in that case ≳ 10 TRX covers the one-time `approve` (~6 TRX on Nile). After that first time, your wallet's TRX balance won't move during a payment — the facilitator covers gas for `permit + transferFrom`.
 
 ### 5.2 Start server (terminal A)
 
@@ -277,7 +282,9 @@ PY
 echo "https://nile.tronscan.org/#/transaction/$TX"
 ```
 
-Expected: `receipt: SUCCESS`, contract = `TFxDcGvS7zfQrS1YzcCMp673ta2NHHzsiH` (Nile `PaymentPermit`), payer TRX **decreases by ~6 TRX** (this is the visible difference vs. GasFree).
+Expected: `receipt: SUCCESS`, contract = `TFxDcGvS7zfQrS1YzcCMp673ta2NHHzsiH` (Nile `PaymentPermit`).
+
+If this is the wallet's **first** payment for this token, the cli also broadcasts a one-time `approve` (a separate tx, slightly earlier in the run) — that's what costs ~6 TRX from your wallet. The actual `permit + transferFrom` settlement above doesn't draw from your wallet at all (facilitator pays). **From the second payment onward, your TRX balance stays put.**
 
 ---
 

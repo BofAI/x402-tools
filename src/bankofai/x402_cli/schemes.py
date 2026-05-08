@@ -16,13 +16,21 @@ SCHEME_TABLE: dict[str, dict[str, list[Scheme]]] = {
         "USDT": ["exact_permit"],
         "USDC": ["exact_permit"],
     },
-    # TRON: default to exact_permit. The exact_permit settlement path is
-    # stable on mainnet (verified by multiple QA on-chain receipts) and is
-    # cheaper for users than exact_gasfree, which adds a per-settlement
-    # transferFee plus a one-time activateFee charged from the payer's
-    # GasFree custodial address. exact_gasfree is offered as an explicit
-    # opt-in second choice for payers who don't hold any TRX — they can
-    # pass `--scheme exact_gasfree` to route through the GasFree relayer.
+    # TRON: default to exact_permit.
+    # In the steady state (i.e. from the wallet's second payment onward),
+    # per-payment gas is paid by the facilitator — the payer signs an
+    # off-chain permit and pays no on-chain TRX. The cli's ensure_allowance
+    # step does require the payer to broadcast a one-time `approve` the
+    # first time they pay through a given token's PaymentPermit contract
+    # (~6 TRX on mainnet); that's a visible one-shot cost from the user's
+    # perspective, not a per-payment cost.
+    #
+    # exact_gasfree remains registered as the opt-in second choice for
+    # payers who don't even want to pay that one-time approve. It routes
+    # everything through a GasFree relayer that fronts gas in exchange
+    # for a per-settlement transferFee plus a one-time activateFee
+    # deducted from a derived custodial address. Verified stable but
+    # adds per-payment fees — that's why it's no longer the default.
     "tron:mainnet": {
         "USDT": ["exact_permit", "exact_gasfree"],
         "USDD": ["exact_permit", "exact_gasfree"],

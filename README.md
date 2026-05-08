@@ -59,16 +59,18 @@ Successful output (excerpt):
 
 Verify on chain at `https://tronscan.org/#/transaction/<tx-hash>`.
 
-> **What just happened?** USDT on TRON defaults to the `exact_permit` scheme — your wallet signs an EIP-2612-style permit and the facilitator submits a single on-chain `permit + transferFrom`. **Your TRON wallet pays a small TRX fee for gas** (~6 TRX of energy on mainnet, less if you have staked).
+> **What just happened?** Your wallet signed a permit off-chain (free, no gas), and the facilitator submitted it on chain on your behalf. **You pay no TRX per payment** — the facilitator covers gas.
 >
-> **No TRX in your wallet?** Add `--scheme exact_gasfree` to route through the GasFree relayer instead — it pays gas on your behalf, in exchange for a per-settlement fee deducted from a derived custodial address. Setup: [docs/manual-test-guide.md → Walkthrough A](docs/manual-test-guide.md#4-walkthrough-a--tron-nile--exact_gasfree).
+> *First-time only*: if this is your wallet's first payment for this token, the cli will ask you to sign and broadcast a one-time `approve` transaction (~6 TRX on mainnet) so the PaymentPermit contract can move tokens on your behalf later. After that, every payment is gas-free from your side.
+>
+> **Don't have any TRX at all?** Add `--scheme exact_gasfree` to skip even that one-time approve — it routes everything through a GasFree relayer that fronts gas in exchange for a per-settlement fee deducted from a derived custodial address. Setup: [docs/manual-test-guide.md → Walkthrough A](docs/manual-test-guide.md#4-walkthrough-a--tron-nile--exact_gasfree).
 
 ### Templates for other networks
 
 | Network | Replace `--network` with | Notes |
 |---|---|---|
-| TRON mainnet (default permit) | `tron:mainnet` | Wallet pays TRX gas. Add `--scheme exact_gasfree` for the gasless path. |
-| BSC mainnet (USDT permit) | `eip155:56` | Wallet **must hold BNB for gas**. |
+| TRON mainnet (default permit) | `tron:mainnet` | Facilitator pays per-payment gas. One-time ~6 TRX approve when you first use a token from a fresh wallet. Add `--scheme exact_gasfree` to skip that too. |
+| BSC mainnet (USDT permit) | `eip155:56` | Same model — facilitator pays per-payment gas; one-time approve fee in BNB on first use. |
 | TRON Nile (testnet) | `tron:nile` | [Faucet](https://nileex.io/join/getJoinPage) |
 | BSC Testnet | `eip155:97` | [Faucet](https://testnet.bnbchain.org/faucet-smart) |
 
