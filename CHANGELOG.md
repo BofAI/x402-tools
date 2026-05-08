@@ -4,6 +4,41 @@ All notable changes to `bankofai-x402-cli` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this package adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0] — 2026-05-08
+
+First stable release. Consolidates everything from `0.1.0-beta.5` through `0.1.0-beta.17`. The package is `pip install bankofai-x402-cli` (no `--pre` needed) and the binary is `x402-cli`.
+
+### What you get
+
+- **Three commands** — `x402-cli pay <url>`, `x402-cli serve`, `x402-cli roundtrip`. Each has a one-paragraph `--help` and a short summary in the top-level command list.
+- **Wallet** — fully delegated to [`bankofai-agent-wallet`](https://github.com/BofAI/agent-wallet) (`raw_secret`, `local_secure`, `privy`, mnemonic). One private key derives both EVM and TRON addresses; no `--wallet` flag, no in-tree env fallback.
+- **Settlement schemes** — auto-picked per `(network, token)` registry; override with `--scheme exact_gasfree | exact_permit | exact`.
+- **Networks** — TRON (`tron:mainnet` / `tron:nile` / `tron:shasta`) and EVM (`eip155:56` / `eip155:97`).
+- **Tokens** — USDT / USDC / USDD / DHLU through the registry, plus `--asset` + `--decimals` for any other ERC-20.
+- **Amount** — `rawAmount = amount × 10^decimals`. `--amount` / `--rawAmount` are mutually exclusive; `pay` mirrors them as `--max-amount` / `--max-rawAmount`.
+- **Output** — JSON envelope with `--json`, human-readable line-per-field by default. SDK's noisy `TRON_GRID_API_KEY` startup warning is silenced — falling back to the BankofAI gateway is the documented default for cli users.
+- **Friendly errors** — 10 classified codes (`WALLET_NOT_CONFIGURED`, `WALLET_CONFIG_CORRUPT`, `INSUFFICIENT_GASFREE_BALANCE`, `GASFREE_NOT_ACTIVATED`, `TRON_ACCOUNT_NOT_ACTIVATED`, `INSUFFICIENT_GAS`, `RATE_LIMITED`, `DEADLINE_TOO_SOON`, `PERMIT_REVERTED`, `SDK_API_DRIFT`) each with a one-line resolution hint. Anything unmatched falls back to `IO_ERROR` with a pointer to the troubleshooting doc.
+- **Compat shim** — `_tron_patch.py` fills in the `raw_data_hex` field on TRON unsigned transactions that all released `tronpy` versions (0.4–0.6) leave empty, using tronpy's own protobuf serializer. Without this, the privy wallet adapter (which strictly requires non-empty `raw_data_hex`) cannot sign approval transactions on TRON. Verified bit-for-bit equal to tronpy's own `txid` calculation. Idempotent and forward-compatible — becomes a no-op the day the SDK starts emitting `raw_data_hex` natively.
+- **TokenRegistry/AssetRegistry import-drift tolerance** — pre-installed older or newer SDKs are auto-aligned by pip; cli accepts either symbol name at import time.
+- **Pinned dependency upper bounds** — `bankofai-x402[evm,tron]>=0.5.9,<0.6`, `bankofai-agent-wallet>=2.4,<3`, plus caps on click/httpx/pydantic/fastapi/uvicorn. A future major bump of any dependency cannot silently land in user environments.
+- **Documentation** — English-only, end-user-facing README on PyPI plus `docs/manual-test-guide.md` with three full hands-on walkthroughs (TRON GasFree, TRON permit, BSC permit) ending in real on-chain receipts.
+
+### On-chain receipts (verified end-to-end on a clean PyPI install)
+
+| Network + scheme | tx hash |
+|---|---|
+| `tron:nile` + `exact_permit` | [`f2c5ed31…`](https://nile.tronscan.org/#/transaction/f2c5ed31a5bb07ae7de4d35094b589f7197de6ccb444014eadcd6914e03e6e33) |
+| `tron:nile` + `exact_gasfree` | [`133a0edb…`](https://nile.tronscan.org/#/transaction/133a0edb32f394fdb35797e51224745bec35ddcd081b81d00468aab710aa414f) |
+| `eip155:97` + `exact_permit` | [`ff8bff7e…`](https://testnet.bscscan.com/tx/ff8bff7ee35d63a44fb6c9109af7f1c616a2c2863a11f8f25f477d13ada5552f) |
+| `tron:mainnet` + `exact_permit` (QA, b16+ raw_data_hex patch) | [`fd1c6678…`](https://tronscan.org/#/transaction/fd1c6678574f7d68454ad76c1ab2efaddaabbcbb61e5f123575619d8c662dba4) |
+| `tron:mainnet` + `exact_permit` (QA, local serve) | [`9ad3be69…`](https://tronscan.org/#/transaction/9ad3be693d42c6aed3ff732f2072b6ca26fc0d878dac1326058a44de8636f078) |
+| `tron:mainnet` + `exact_permit` (QA, roundtrip) | [`1383a0db…`](https://tronscan.org/#/transaction/1383a0db66c46520fafb1ad98db7d7ce8a6b68ad0fb12131704ec78b7f1959a6) |
+
+### Known limitations (not cli bugs)
+
+- **TRON main-wallet activation** — fresh TRON addresses (e.g. brand-new privy wallets) must receive at least one inflow before they can be the owner of a contract call. cli now surfaces the node's `account does not exist` error as `TRON_ACCOUNT_NOT_ACTIVATED` with a one-line hint.
+- **BSC USDC `0x8AC76a51…`** does not implement `transferWithAuthorization` (or `permit`). `--scheme exact` against this token will revert at the facilitator's settle step. This is a (token, scheme) compatibility matter for the facilitator, not the cli.
+
 ## [0.1.0-beta.17] — 2026-05-07
 
 ### Added
