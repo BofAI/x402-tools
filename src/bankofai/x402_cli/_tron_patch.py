@@ -47,23 +47,28 @@ becomes a no-op (the patched function will short-circuit because
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
-def _serialize_raw_data(raw_data: dict) -> str | None:
+def _serialize_raw_data(raw_data: dict[str, Any]) -> str | None:
     """Serialize a tronpy raw_data dict to hex via tronpy's own protobuf helper.
 
     Returns None on any failure — the caller falls back to the SDK's payload
     as-is, which still works for raw_secret / local_secure wallets.
     """
     try:
-        from tronpy.proto.transaction import _raw_data_to_protobuf
-        from tronpy.proto import tron_pb2
+        # tronpy.proto has no py.typed marker so mypy can't analyze the
+        # symbols; we trust the runtime contract and only depend on the
+        # serializer signature, which is stable across 0.6.x.
+        from tronpy.proto.transaction import _raw_data_to_protobuf  # type: ignore[import-untyped]
+        from tronpy.proto import tron_pb2  # type: ignore[import-untyped]
 
         transaction_raw = _raw_data_to_protobuf(raw_data)
         transaction = tron_pb2.Transaction(raw_data=transaction_raw)
-        return transaction.raw_data.SerializeToString().hex()
+        result: str = transaction.raw_data.SerializeToString().hex()
+        return result
     except Exception as e:  # noqa: BLE001 — best-effort fallback
         logger.debug("Could not serialize raw_data via tronpy.proto: %s", e)
         return None
@@ -102,4 +107,4 @@ def install() -> None:
         return payload
 
     TronClientSigner._build_unsigned_tx_payload = patched
-    TronClientSigner._x402_cli_raw_data_hex_patched = True  # type: ignore[attr-defined]
+    TronClientSigner._x402_cli_raw_data_hex_patched = True
