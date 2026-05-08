@@ -12,7 +12,7 @@ First stable release. Consolidates everything from `0.1.0-beta.5` through `0.1.0
 
 - **Three commands** — `x402-cli pay <url>`, `x402-cli serve`, `x402-cli roundtrip`. Each has a one-paragraph `--help` and a short summary in the top-level command list.
 - **Wallet** — fully delegated to [`bankofai-agent-wallet`](https://github.com/BofAI/agent-wallet) (`raw_secret`, `local_secure`, `privy`, mnemonic). One private key derives both EVM and TRON addresses; no `--wallet` flag, no in-tree env fallback.
-- **Settlement schemes** — auto-picked per `(network, token)` registry; override with `--scheme exact_gasfree | exact_permit | exact`.
+- **Settlement schemes** — auto-picked per `(network, token)` registry; override with `--scheme exact_gasfree | exact_permit | exact`. **TRON USDT / USDD default to `exact_permit`** (verified stable on mainnet by multiple QA on-chain receipts); `exact_gasfree` is registered as an opt-in second choice for payers without TRX. BSC USDT/USDC default to `exact_permit`; BSC Testnet DHLU defaults to `exact` (ERC-3009).
 - **Networks** — TRON (`tron:mainnet` / `tron:nile` / `tron:shasta`) and EVM (`eip155:56` / `eip155:97`).
 - **Tokens** — USDT / USDC / USDD / DHLU through the registry, plus `--asset` + `--decimals` for any other ERC-20.
 - **Amount** — `rawAmount = amount × 10^decimals`. `--amount` / `--rawAmount` are mutually exclusive; `pay` mirrors them as `--max-amount` / `--max-rawAmount`.

@@ -31,7 +31,7 @@ agent-wallet start raw_secret \
 | **`x402-cli serve`** | The recipient | Starts a local `402` paywall endpoint that only returns content after a valid payment is settled. |
 | **`x402-cli roundtrip`** | Self-test / one-shot transfer | Spins up a `serve` in the background, runs `pay` against it, and tears it down. **The fastest way to make a payment from the command line** — and the easiest way to verify your install end-to-end. |
 
-## 4. Copy-paste: a GasFree transfer on TRON mainnet
+## 4. Copy-paste: a USDT transfer on TRON mainnet
 
 Replace `<recipient-TRON-address>` with a real `T...` address and run:
 
@@ -49,7 +49,7 @@ Successful output (excerpt):
 {
   "ok": true,
   "result": {
-    "scheme": "exact_gasfree",
+    "scheme": "exact_permit",
     "amount": "1000000",
     "paid": true,
     "transaction": "<64-hex-tx-hash>"
@@ -59,16 +59,16 @@ Successful output (excerpt):
 
 Verify on chain at `https://tronscan.org/#/transaction/<tx-hash>`.
 
-> **Why is this GasFree?** USDT on TRON mainnet defaults to the `exact_gasfree` scheme — a GasFree relayer pays the on-chain TRX gas for you, so **your main wallet does not need any TRX**. The USDT is debited from your derived GasFree custodial address (deterministic from your private key).
+> **What just happened?** USDT on TRON defaults to the `exact_permit` scheme — your wallet signs an EIP-2612-style permit and the facilitator submits a single on-chain `permit + transferFrom`. **Your TRON wallet pays a small TRX fee for gas** (~6 TRX of energy on mainnet, less if you have staked).
 >
-> **Before the first transfer**, fund that GasFree custodial address with some USDT. Step-by-step instructions: [docs/manual-test-guide.md → Walkthrough A](docs/manual-test-guide.md#4-walkthrough-a--tron-nile--exact_gasfree).
+> **No TRX in your wallet?** Add `--scheme exact_gasfree` to route through the GasFree relayer instead — it pays gas on your behalf, in exchange for a per-settlement fee deducted from a derived custodial address. Setup: [docs/manual-test-guide.md → Walkthrough A](docs/manual-test-guide.md#4-walkthrough-a--tron-nile--exact_gasfree).
 
 ### Templates for other networks
 
 | Network | Replace `--network` with | Notes |
 |---|---|---|
-| TRON mainnet (default GasFree) | `tron:mainnet` | Main wallet does not need TRX. |
-| BSC mainnet (USDT permit) | `eip155:56` | Main wallet **must hold BNB for gas.** |
+| TRON mainnet (default permit) | `tron:mainnet` | Wallet pays TRX gas. Add `--scheme exact_gasfree` for the gasless path. |
+| BSC mainnet (USDT permit) | `eip155:56` | Wallet **must hold BNB for gas**. |
 | TRON Nile (testnet) | `tron:nile` | [Faucet](https://nileex.io/join/getJoinPage) |
 | BSC Testnet | `eip155:97` | [Faucet](https://testnet.bnbchain.org/faucet-smart) |
 

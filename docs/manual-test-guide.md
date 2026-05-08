@@ -98,15 +98,17 @@ export TRON_PRIVATE_KEY=0x<your-key>
 
 | Scheme | Payer pays gas? | USDT debited from | When to use |
 |---|---|---|---|
-| `exact_permit` (EVM, TRON) | Yes (TRX/BNB on payer) | Payer's main wallet | Token supports EIP-2612 / TIP-2612 `permit` and payer holds gas |
-| `exact_gasfree` (TRON only) | **No** — relayer pays | Payer's `gasFreeAddress` (custodial) | Payer has no TRX; willing to pre-fund a GasFree address |
-| `exact` (EVM) | Yes | Payer's main wallet | Token supports ERC-3009 `transferWithAuthorization` |
+| `exact_permit` (EVM, TRON) — **default for USDT/USDD/USDC** | Yes (TRX/BNB on payer) | Payer's main wallet | Token supports EIP-2612 / TIP-2612 `permit` and payer holds gas |
+| `exact_gasfree` (TRON only, opt-in) | **No** — relayer pays | Payer's `gasFreeAddress` (custodial) | Payer has no TRX; willing to pre-fund a GasFree address |
+| `exact` (EVM, default for DHLU on BSC Testnet) | Yes | Payer's main wallet | Token supports ERC-3009 `transferWithAuthorization` |
 
-x402-cli auto-selects per `(network, token)`. Override with `--scheme <name>`.
+x402-cli auto-selects per `(network, token)` from the registry; on TRON USDT/USDD that's **`exact_permit`**, with `exact_gasfree` registered as an opt-in second choice. Override with `--scheme <name>`.
 
 ---
 
-## 4. Walkthrough A — TRON Nile + `exact_gasfree`
+## 4. Walkthrough A — TRON Nile + `exact_gasfree` (opt-in path)
+
+> **Note**: `exact_permit` is the cli's default for TRON USDT (Walkthrough B is the default-path version). `exact_gasfree` is the **opt-in alternative** for payers who don't hold any TRX — you trade per-settlement fees for not paying TRX gas yourself. Pick this walkthrough if your scenario is "I have USDT but no TRX in this wallet."
 
 GasFree means **the user's main TRON wallet does not need TRX**. A relayer pays gas. USDT is debited from a derived custodial address (`gasFreeAddress`), not the main wallet.
 
@@ -169,12 +171,15 @@ Wait ~10 seconds, re-run the curl from 4.1, and confirm `assets[0].balance > 0`.
 
 ### 4.3 One-shot roundtrip
 
+You **must** pass `--scheme exact_gasfree` explicitly — the cli's default for TRON USDT is `exact_permit`.
+
 ```bash
 x402-cli roundtrip \
   --pay-to <pay-to TRON address> \
   --amount 0.0001 \
   --network tron:nile \
   --token USDT \
+  --scheme exact_gasfree \
   --json
 ```
 
@@ -202,11 +207,11 @@ Notice the **payer's TRX balance is unchanged** — the relayer covered gas. USD
 
 ---
 
-## 5. Walkthrough B — TRON Nile + `exact_permit`
+## 5. Walkthrough B — TRON Nile + `exact_permit` (DEFAULT)
 
-EIP-712-style `permit` + `transferFrom`, executed on the payer's main wallet. Payer **must** hold TRX for gas.
+This is the **default path** for TRON USDT — `--scheme exact_permit` is what the cli auto-picks if you don't override it. EIP-712-style `permit` + `transferFrom`, executed on the payer's main wallet. Payer **must** hold TRX for gas.
 
-> Nile USDT (`TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf`) implements TIP-2612 correctly, so this path works on Nile. Mainnet stable-coins vary — TRON's default is GasFree for that reason.
+> Nile USDT (`TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf`) implements TIP-2612 correctly, so this path works on Nile. **TRON USDT defaults to `exact_permit` cli-wide** (mainnet too) — `exact_gasfree` is the opt-in fallback for payers without TRX.
 
 ### 5.1 Verify main-wallet balances
 
@@ -336,11 +341,11 @@ export AGENT_WALLET_DIR=/tmp/x402-test-wallet
 agent-wallet start raw_secret --wallet-id payer --private-key 0x...
 agent-wallet resolve-address payer    # note the EVM and TRON addresses
 
-# TRON GasFree (no TRX needed on payer's main wallet)
+# TRON permit — DEFAULT (payer's main wallet pays TRX gas)
 x402-cli roundtrip --pay-to <T...> --amount 0.0001 --network tron:nile --token USDT
 
-# TRON permit (payer's main wallet pays TRX gas)
-x402-cli roundtrip --pay-to <T...> --amount 0.0001 --network tron:nile --token USDT --scheme exact_permit
+# TRON GasFree — opt-in path (relayer pays gas; needs gasFreeAddress pre-funded)
+x402-cli roundtrip --pay-to <T...> --amount 0.0001 --network tron:nile --token USDT --scheme exact_gasfree
 
 # BSC permit
 x402-cli roundtrip --pay-to <0x...> --amount 0.0001 --network eip155:97 --token USDT

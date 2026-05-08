@@ -1,18 +1,31 @@
 """Tests for schemes module."""
 
-from bankofai.x402_cli.schemes import pick_scheme, is_known_scheme
+from bankofai.x402_cli.schemes import SCHEME_TABLE, pick_scheme, is_known_scheme
 
 
 def test_pick_scheme_tron_nile_usdt() -> None:
-    """Test scheme picking for TRON Nile USDT."""
+    """TRON Nile USDT defaults to exact_permit (exact_gasfree stays opt-in)."""
     scheme = pick_scheme("tron:nile", "USDT")
-    assert scheme == "exact_gasfree"
+    assert scheme == "exact_permit"
 
 
 def test_pick_scheme_tron_mainnet_usdt() -> None:
-    """Test scheme picking for TRON mainnet USDT."""
+    """TRON mainnet USDT defaults to exact_permit (exact_gasfree stays opt-in)."""
     scheme = pick_scheme("tron:mainnet", "USDT")
-    assert scheme == "exact_gasfree"
+    assert scheme == "exact_permit"
+
+
+def test_tron_keeps_gasfree_as_second_choice() -> None:
+    """exact_gasfree must remain registered on every TRON entry so that
+    explicitly passing --scheme exact_gasfree still resolves successfully."""
+    for net in ("tron:mainnet", "tron:nile", "tron:shasta"):
+        usdt_schemes = SCHEME_TABLE[net]["USDT"]
+        assert "exact_gasfree" in usdt_schemes, (
+            f"{net} USDT must still list exact_gasfree as an opt-in fallback"
+        )
+        assert usdt_schemes[0] == "exact_permit", (
+            f"{net} USDT first choice must be exact_permit (default)"
+        )
 
 
 def test_pick_scheme_bsc_testnet_usdt() -> None:
