@@ -1,4 +1,4 @@
-"""Output formatting for x402-tools."""
+"""Output formatting for x402-cli."""
 
 import json
 import sys

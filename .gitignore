@@ -29,3 +29,10 @@ htmlcov/
 .tox/
 .hypothesis/
 .ruff_cache/
+
+# macOS metadata
+.DS_Store
+
+# pytest --cov artifact
+coverage.xml
+.coverage
